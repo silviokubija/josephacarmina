@@ -105,7 +105,7 @@
 <script>
   const SUPABASE_URL = 'https://qlfprztximxnmuycahcw.supabase.co';
   const SUPABASE_KEY = 'sb_publishable_DwtYsPo0iobWCtYRPxzxvg_ZFUVfnlG';
-  const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
   const loginBox = document.getElementById('loginBox');
   const adminBox = document.getElementById('adminBox');
@@ -114,7 +114,7 @@
 
   // Checar sessão
   async function checkSession() {
-    const { data: { session } } = await supabase.auth.getSession();
+    const { data: { session } } = await supabaseClient.auth.getSession();
     if (session) {
       loginBox.classList.add('hidden');
       adminBox.classList.remove('hidden');
@@ -131,7 +131,7 @@
     loginMsg.className = 'msg';
     const email = document.getElementById('email').value;
     const password = document.getElementById('password').value;
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
     if (error) {
       loginMsg.textContent = 'Erro: ' + error.message;
       loginMsg.classList.add('error');
@@ -142,7 +142,7 @@
 
   // Logout
   async function logout() {
-    await supabase.auth.signOut();
+    await supabaseClient.auth.signOut();
     checkSession();
   }
 
@@ -165,14 +165,14 @@
       const nomeArquivo = `${Date.now()}_${file.name}`;
       
       // Upload da foto
-      const { data: uploadData, error: uploadError } = await supabase.storage
+      const { data: uploadData, error: uploadError } = await supabaseClient.storage
         .from('fotos')
         .upload(nomeArquivo, file);
       
       if (uploadError) throw uploadError;
 
       // Pegar URL publica da foto
-      const { data: { publicUrl } } = supabase.storage
+      const { data: { publicUrl } } = supabaseClient.storage
         .from('fotos')
         .getPublicUrl(nomeArquivo);
 
@@ -186,7 +186,7 @@
         imagem: publicUrl
       };
 
-      const { error: insertError } = await supabase.from('produtos').insert([produto]);
+      const { error: insertError } = await supabaseClient.from('produtos').insert([produto]);
       if (insertError) throw insertError;
 
       showMsg('Peça cadastrada com sucesso!');
@@ -203,7 +203,7 @@
 
   // Carregar Tabela
   async function carregarTabela() {
-    const { data, error } = await supabase.from('produtos').select('*').order('created_at', { ascending: false });
+    const { data, error } = await supabaseClient.from('produtos').select('*').order('created_at', { ascending: false });
     const tbody = document.getElementById('tabelaProdutos');
     if (error) {
       tbody.innerHTML = '<tr><td colspan="5">Erro ao carregar</td></tr>';
@@ -223,7 +223,7 @@
   // Excluir Peça
   async function excluir(id) {
     if(confirm('Tem certeza que deseja excluir esta peça?')) {
-      const { error } = await supabase.from('produtos').delete().eq('id', id);
+      const { error } = await supabaseClient.from('produtos').delete().eq('id', id);
       if (error) {
         showMsg('Erro ao excluir', true);
       } else {

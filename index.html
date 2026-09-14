@@ -259,7 +259,7 @@
   // ===== SUPABASE =====
   const SUPABASE_URL = 'https://qlfprztximxnmuycahcw.supabase.co';
   const SUPABASE_KEY = 'sb_publishable_DwtYsPo0iobWCtYRPxzxvg_ZFUVfnlG';
-  const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
   // ===== ESTADO =====
   let produtos = [];
@@ -268,7 +268,7 @@
 
   // ===== BUSCAR DADOS DO SUPABASE =====
   async function carregarProdutos() {
-    const { data, error } = await supabase.from('produtos').select('*').order('created_at', { ascending: false });
+    const { data, error } = await supabaseClient.from('produtos').select('*').order('created_at', { ascending: false });
     if (error) {
       console.error('Erro ao buscar produtos:', error);
       return;
