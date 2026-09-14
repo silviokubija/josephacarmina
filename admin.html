@@ -19,7 +19,11 @@
   button:hover { background: var(--verde-escuro); }
   .btn-danger { background: #b34a3c; }
   .btn-danger:hover { background: #8a372c; }
-  .logout-btn { background: #666; width: auto; padding: 5px 15px; float: right; }
+  .btn-edit { background: #d0b06b; color: white; margin-right: 5px; }
+  .btn-edit:hover { background: #B89B5E; }
+  .btn-cancel { background: #999; margin-top: 5px; }
+  .btn-cancel:hover { background: #666; }
+  .logout-btn { background: #666; width: auto; padding: 5px 15px; float: right; margin-top: 0; }
   table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 0.9rem; }
   th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
   th { background: var(--bege); }
@@ -27,6 +31,7 @@
   .msg { padding: 10px; margin-bottom: 15px; border-radius: 4px; text-align: center; display: none; }
   .msg.success { background: #d4edda; color: #155724; display: block; }
   .msg.error { background: #f8d7da; color: #721c24; display: block; }
+  .action-buttons { display: flex; gap: 5px; }
 </style>
 </head>
 <body>
@@ -51,9 +56,11 @@
   <button class="logout-btn" onclick="logout()">Sair</button>
   <h1>Painel Josephá Carmina</h1>
   
-  <h2>Adicionar Nova Peça</h2>
+  <h2 id="formTitle">Adicionar Nova Peça</h2>
   <div id="adminMsg" class="msg"></div>
   <form id="addForm">
+    <input type="hidden" id="editId">
+    <input type="hidden" id="oldImage">
     <div class="form-group">
       <label>Nome da Peça</label>
       <input type="text" id="nome" required>
@@ -81,10 +88,11 @@
       <input type="text" id="selo" placeholder="Ex: Novidade, Peça Única">
     </div>
     <div class="form-group">
-      <label>Foto da Peça</label>
+      <label id="fotoLabel">Foto da Peça</label>
       <input type="file" id="foto" accept="image/*" required>
     </div>
     <button type="submit" id="submitBtn">Salvar Peça</button>
+    <button type="button" id="cancelBtn" class="btn-cancel hidden" onclick="cancelarEdicao()">Cancelar Edição</button>
   </form>
 
   <h2>Peças Cadastradas</h2>
@@ -153,51 +161,65 @@
     setTimeout(() => adminMsg.className = 'msg', 4000);
   }
 
-  // Cadastrar Peça
+  // Cadastrar/Alterar Peça
   document.getElementById('addForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const btn = document.getElementById('submitBtn');
     btn.disabled = true;
-    btn.textContent = 'Enviando...';
+    btn.textContent = 'Salvando...';
 
     try {
       const file = document.getElementById('foto').files[0];
-      const nomeArquivo = `${Date.now()}_${file.name}`;
-      
-      // Upload da foto
-      const { data: uploadData, error: uploadError } = await supabaseClient.storage
-        .from('fotos')
-        .upload(nomeArquivo, file);
-      
-      if (uploadError) throw uploadError;
+      const editId = document.getElementById('editId').value;
+      const oldImage = document.getElementById('oldImage').value;
+      let finalImageUrl = oldImage;
 
-      // Pegar URL publica da foto
-      const { data: { publicUrl } } = supabaseClient.storage
-        .from('fotos')
-        .getPublicUrl(nomeArquivo);
+      // Se houver um arquivo novo, faz o upload
+      if (file) {
+        const nomeArquivo = `${Date.now()}_${file.name}`;
+        const { data: uploadData, error: uploadError } = await supabaseClient.storage
+          .from('fotos')
+          .upload(nomeArquivo, file);
+        
+        if (uploadError) throw uploadError;
 
-      // Inserir no banco
+        const { data: { publicUrl } } = supabaseClient.storage
+          .from('fotos')
+          .getPublicUrl(nomeArquivo);
+          
+        finalImageUrl = publicUrl;
+      }
+
       const produto = {
         nome: document.getElementById('nome').value,
         categoria: document.getElementById('categoria').value,
         tamanho: document.getElementById('tamanho').value,
         preco: parseFloat(document.getElementById('preco').value),
         selo: document.getElementById('selo').value,
-        imagem: publicUrl
+        imagem: finalImageUrl
       };
 
-      const { error: insertError } = await supabaseClient.from('produtos').insert([produto]);
-      if (insertError) throw insertError;
+      if (editId) {
+        // Atualizar produto existente
+        const { error: updateError } = await supabaseClient.from('produtos').update(produto).eq('id', editId);
+        if (updateError) throw updateError;
+        showMsg('Peça atualizada com sucesso!');
+      } else {
+        // Inserir novo produto
+        const { error: insertError } = await supabaseClient.from('produtos').insert([produto]);
+        if (insertError) throw insertError;
+        showMsg('Peça cadastrada com sucesso!');
+      }
 
-      showMsg('Peça cadastrada com sucesso!');
-      document.getElementById('addForm').reset();
+      cancelarEdicao(); // Limpa o form e volta ao estado normal
       carregarTabela();
 
     } catch (err) {
       showMsg('Erro: ' + err.message, true);
     } finally {
       btn.disabled = false;
-      btn.textContent = 'Salvar Peça';
+      const isEdit = document.getElementById('editId').value;
+      btn.textContent = isEdit ? 'Atualizar Peça' : 'Salvar Peça';
     }
   });
 
@@ -209,15 +231,56 @@
       tbody.innerHTML = '<tr><td colspan="5">Erro ao carregar</td></tr>';
       return;
     }
+    
     tbody.innerHTML = data.map(p => `
       <tr>
         <td><img src="${p.imagem}" class="thumb"></td>
         <td>${p.nome}</td>
         <td>${p.categoria}</td>
         <td>R$ ${p.preco.toFixed(2).replace('.',',')}</td>
-        <td><button class="btn-danger" onclick="excluir(${p.id})">Excluir</button></td>
+        <td class="action-buttons">
+          <button class="btn-edit" onclick="iniciarEdicao('${p.id}', '${p.nome.replace(/'/g, "\\'")}', '${p.categoria}', '${p.tamanho}', ${p.preco}, '${p.selo || ''}', '${p.imagem}')">Alterar</button>
+          <button class="btn-danger" onclick="excluir(${p.id})">Excluir</button>
+        </td>
       </tr>
     `).join('');
+  }
+
+  // Iniciar Edição
+  function iniciarEdicao(id, nome, categoria, tamanho, preco, selo, imagem) {
+    document.getElementById('formTitle').textContent = 'Alterar Peça';
+    document.getElementById('editId').value = id;
+    document.getElementById('oldImage').value = imagem;
+    
+    document.getElementById('nome').value = nome;
+    document.getElementById('categoria').value = categoria;
+    document.getElementById('tamanho').value = tamanho;
+    document.getElementById('preco').value = preco;
+    document.getElementById('selo').value = selo;
+    
+    // A foto passa a não ser obrigatória na edição
+    const fotoInput = document.getElementById('foto');
+    fotoInput.required = false;
+    document.getElementById('fotoLabel').textContent = 'Foto da Peça (Deixe em branco para manter a atual)';
+    
+    document.getElementById('submitBtn').textContent = 'Atualizar Peça';
+    document.getElementById('cancelBtn').classList.remove('hidden');
+    
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // Cancelar Edição
+  function cancelarEdicao() {
+    document.getElementById('addForm').reset();
+    document.getElementById('formTitle').textContent = 'Adicionar Nova Peça';
+    document.getElementById('editId').value = '';
+    document.getElementById('oldImage').value = '';
+    
+    document.getElementById('foto').required = true;
+    document.getElementById('fotoLabel').textContent = 'Foto da Peça';
+    
+    document.getElementById('submitBtn').textContent = 'Salvar Peça';
+    document.getElementById('cancelBtn').classList.add('hidden');
   }
 
   // Excluir Peça
