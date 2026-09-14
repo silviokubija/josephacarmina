@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin - Josephá Carmina</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root { --bege: #F3EEE3; --verde-escuro: #3F4636; --verde: #5E6751; --dourado: #B89B5E; }
+  body { font-family: 'Montserrat', sans-serif; background: var(--bege); color: var(--verde-escuro); margin: 0; padding: 20px; }
+  .container { max-width: 800px; margin: 0 auto; background: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+  h1, h2 { color: var(--verde-escuro); text-align: center; }
+  .hidden { display: none !important; }
+  .form-group { margin-bottom: 15px; }
+  label { display: block; margin-bottom: 5px; font-weight: 500; font-size: 0.9rem; }
+  input, select, button { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-family: inherit; box-sizing: border-box; }
+  button { background: var(--verde); color: #fff; border: none; cursor: pointer; font-weight: 600; margin-top: 10px; transition: 0.3s; }
+  button:hover { background: var(--verde-escuro); }
+  .btn-danger { background: #b34a3c; }
+  .btn-danger:hover { background: #8a372c; }
+  .logout-btn { background: #666; width: auto; padding: 5px 15px; float: right; }
+  table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 0.9rem; }
+  th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+  th { background: var(--bege); }
+  img.thumb { width: 40px; height: 40px; object-fit: cover; border-radius: 4px; }
+  .msg { padding: 10px; margin-bottom: 15px; border-radius: 4px; text-align: center; display: none; }
+  .msg.success { background: #d4edda; color: #155724; display: block; }
+  .msg.error { background: #f8d7da; color: #721c24; display: block; }
+</style>
+</head>
+<body>
+
+<div class="container" id="loginBox">
+  <h1>Login Administrativo</h1>
+  <div id="loginMsg" class="msg"></div>
+  <form id="loginForm">
+    <div class="form-group">
+      <label>E-mail</label>
+      <input type="email" id="email" required>
+    </div>
+    <div class="form-group">
+      <label>Senha</label>
+      <input type="password" id="password" required>
+    </div>
+    <button type="submit">Entrar</button>
+  </form>
+</div>
+
+<div class="container hidden" id="adminBox">
+  <button class="logout-btn" onclick="logout()">Sair</button>
+  <h1>Painel Josephá Carmina</h1>
+  
+  <h2>Adicionar Nova Peça</h2>
+  <div id="adminMsg" class="msg"></div>
+  <form id="addForm">
+    <div class="form-group">
+      <label>Nome da Peça</label>
+      <input type="text" id="nome" required>
+    </div>
+    <div class="form-group">
+      <label>Categoria</label>
+      <select id="categoria" required>
+        <option value="Vestidos">Vestidos</option>
+        <option value="Blusas">Blusas</option>
+        <option value="Calças">Calças</option>
+        <option value="Bolsas">Bolsas</option>
+        <option value="Acessórios">Acessórios</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Tamanho</label>
+      <input type="text" id="tamanho" required placeholder="Ex: M, 38, Único">
+    </div>
+    <div class="form-group">
+      <label>Preço (R$)</label>
+      <input type="number" step="0.01" id="preco" required placeholder="Ex: 89.90">
+    </div>
+    <div class="form-group">
+      <label>Selo (Opcional)</label>
+      <input type="text" id="selo" placeholder="Ex: Novidade, Peça Única">
+    </div>
+    <div class="form-group">
+      <label>Foto da Peça</label>
+      <input type="file" id="foto" accept="image/*" required>
+    </div>
+    <button type="submit" id="submitBtn">Salvar Peça</button>
+  </form>
+
+  <h2>Peças Cadastradas</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Foto</th>
+        <th>Nome</th>
+        <th>Categoria</th>
+        <th>Preço</th>
+        <th>Ação</th>
+      </tr>
+    </thead>
+    <tbody id="tabelaProdutos"></tbody>
+  </table>
+</div>
+
+<script>
+  const SUPABASE_URL = 'https://qlfprztximxnmuycahcw.supabase.co';
+  const SUPABASE_KEY = 'sb_publishable_DwtYsPo0iobWCtYRPxzxvg_ZFUVfnlG';
+  const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  const loginBox = document.getElementById('loginBox');
+  const adminBox = document.getElementById('adminBox');
+  const loginMsg = document.getElementById('loginMsg');
+  const adminMsg = document.getElementById('adminMsg');
+
+  // Checar sessão
+  async function checkSession() {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+      loginBox.classList.add('hidden');
+      adminBox.classList.remove('hidden');
+      carregarTabela();
+    } else {
+      loginBox.classList.remove('hidden');
+      adminBox.classList.add('hidden');
+    }
+  }
+
+  // Login
+  document.getElementById('loginForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    loginMsg.className = 'msg';
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) {
+      loginMsg.textContent = 'Erro: ' + error.message;
+      loginMsg.classList.add('error');
+    } else {
+      checkSession();
+    }
+  });
+
+  // Logout
+  async function logout() {
+    await supabase.auth.signOut();
+    checkSession();
+  }
+
+  // Mostrar Mensagem Admin
+  function showMsg(text, isError=false) {
+    adminMsg.textContent = text;
+    adminMsg.className = isError ? 'msg error' : 'msg success';
+    setTimeout(() => adminMsg.className = 'msg', 4000);
+  }
+
+  // Cadastrar Peça
+  document.getElementById('addForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true;
+    btn.textContent = 'Enviando...';
+
+    try {
+      const file = document.getElementById('foto').files[0];
+      const nomeArquivo = `${Date.now()}_${file.name}`;
+      
+      // Upload da foto
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('fotos')
+        .upload(nomeArquivo, file);
+      
+      if (uploadError) throw uploadError;
+
+      // Pegar URL publica da foto
+      const { data: { publicUrl } } = supabase.storage
+        .from('fotos')
+        .getPublicUrl(nomeArquivo);
+
+      // Inserir no banco
+      const produto = {
+        nome: document.getElementById('nome').value,
+        categoria: document.getElementById('categoria').value,
+        tamanho: document.getElementById('tamanho').value,
+        preco: parseFloat(document.getElementById('preco').value),
+        selo: document.getElementById('selo').value,
+        imagem: publicUrl
+      };
+
+      const { error: insertError } = await supabase.from('produtos').insert([produto]);
+      if (insertError) throw insertError;
+
+      showMsg('Peça cadastrada com sucesso!');
+      document.getElementById('addForm').reset();
+      carregarTabela();
+
+    } catch (err) {
+      showMsg('Erro: ' + err.message, true);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Salvar Peça';
+    }
+  });
+
+  // Carregar Tabela
+  async function carregarTabela() {
+    const { data, error } = await supabase.from('produtos').select('*').order('created_at', { ascending: false });
+    const tbody = document.getElementById('tabelaProdutos');
+    if (error) {
+      tbody.innerHTML = '<tr><td colspan="5">Erro ao carregar</td></tr>';
+      return;
+    }
+    tbody.innerHTML = data.map(p => `
+      <tr>
+        <td><img src="${p.imagem}" class="thumb"></td>
+        <td>${p.nome}</td>
+        <td>${p.categoria}</td>
+        <td>R$ ${p.preco.toFixed(2).replace('.',',')}</td>
+        <td><button class="btn-danger" onclick="excluir(${p.id})">Excluir</button></td>
+      </tr>
+    `).join('');
+  }
+
+  // Excluir Peça
+  async function excluir(id) {
+    if(confirm('Tem certeza que deseja excluir esta peça?')) {
+      const { error } = await supabase.from('produtos').delete().eq('id', id);
+      if (error) {
+        showMsg('Erro ao excluir', true);
+      } else {
+        showMsg('Peça excluída.');
+        carregarTabela();
+      }
+    }
+  }
+
+  checkSession();
+</script>
+</body>
+</html>
