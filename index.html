@@ -27,8 +27,9 @@
   /* ---- HEADER ---- */
   header{position:sticky;top:0;z-index:100;background:rgba(243,238,227,.96);backdrop-filter:blur(6px);border-bottom:1px solid var(--bege-escuro)}
   .nav{max-width:1200px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px}
-  .logo{display:flex;align-items:center;gap:12px;cursor:pointer}
-  .logo img{height:52px;width:auto}
+  .logo{display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer}
+  .logo img.simbolo{height:54px;width:auto}
+  .logo img.texto{height:28px;width:auto}
   .menu{display:flex;gap:28px;list-style:none}
   .menu a{text-decoration:none;color:var(--verde-escuro);font-size:.8rem;letter-spacing:1.5px;text-transform:uppercase;transition:color .3s}
   .menu a:hover{color:var(--dourado)}
@@ -140,7 +141,8 @@
 <header>
   <nav class="nav">
     <div class="logo" onclick="location.href='#inicio'">
-      <img src="assets/imagens/logo.jpg" alt="Josephá Carmina">
+      <img src="assets/imagens/Logo_simbolo.jpg" alt="Símbolo Josephá Carmina" class="simbolo">
+      <img src="assets/imagens/Logo_texto.jpg" alt="Josephá Carmina" class="texto">
     </div>
     <ul class="menu" id="menu">
       <li><a href="#inicio">Início</a></li>
