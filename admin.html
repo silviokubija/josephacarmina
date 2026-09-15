@@ -69,6 +69,15 @@
     </div>
     <div class="form-group">
       <label>
+        <span>Marca</span>
+        <span class="btn-add-cat" onclick="adicionarNovaMarca()" title="Adicionar nova marca">+</span>
+      </label>
+      <select id="marca" required>
+        <!-- Preenchido via JS -->
+      </select>
+    </div>
+    <div class="form-group">
+      <label>
         <span>Categoria</span>
         <span class="btn-add-cat" onclick="adicionarNovaCategoria()" title="Adicionar nova categoria">+</span>
       </label>
@@ -106,6 +115,7 @@
       <tr>
         <th>Foto</th>
         <th>Nome</th>
+        <th>Marca</th>
         <th>Categoria</th>
         <th>Preço</th>
         <th>Ação</th>
@@ -124,6 +134,41 @@
   const adminBox = document.getElementById('adminBox');
   const loginMsg = document.getElementById('loginMsg');
   const adminMsg = document.getElementById('adminMsg');
+
+  // Adicionar Nova Marca Manualmente
+  async function adicionarNovaMarca() {
+    const nova = prompt("Digite o nome da nova marca:");
+    if (nova && nova.trim() !== "") {
+      const marcaStr = nova.trim();
+      const { error } = await supabaseClient.from('marcas').insert([{ nome: marcaStr }]);
+      if (error) {
+        alert("Erro ao adicionar marca (talvez ela já exista).");
+      } else {
+        await carregarMarcas(marcaStr);
+      }
+    }
+  }
+
+  // Carregar Marcas do banco
+  async function carregarMarcas(selecionar = null) {
+    const { data, error } = await supabaseClient.from('marcas').select('nome').order('nome');
+    if (error) return;
+    
+    const select = document.getElementById('marca');
+    const atual = selecionar || select.value;
+    select.innerHTML = '';
+    
+    data.forEach(m => {
+      const opt = document.createElement('option');
+      opt.value = m.nome;
+      opt.text = m.nome;
+      select.add(opt);
+    });
+    
+    if (atual && data.find(m => m.nome === atual)) {
+      select.value = atual;
+    }
+  }
 
   // Adicionar Nova Categoria Manualmente
   function adicionarNovaCategoria() {
@@ -164,6 +209,7 @@
     if (session) {
       loginBox.classList.add('hidden');
       adminBox.classList.remove('hidden');
+      carregarMarcas();
       carregarTabela();
     } else {
       loginBox.classList.remove('hidden');
@@ -226,6 +272,7 @@
 
       const produto = {
         nome: document.getElementById('nome').value,
+        marca: document.getElementById('marca').value,
         categoria: document.getElementById('categoria').value,
         tamanho: document.getElementById('tamanho').value,
         preco: parseFloat(document.getElementById('preco').value),
@@ -260,7 +307,7 @@
     const { data, error } = await supabaseClient.from('produtos').select('*').order('created_at', { ascending: false });
     const tbody = document.getElementById('tabelaProdutos');
     if (error) {
-      tbody.innerHTML = '<tr><td colspan="5">Erro ao carregar</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="6">Erro ao carregar</td></tr>';
       return;
     }
     
@@ -271,10 +318,11 @@
       <tr>
         <td><img src="${p.imagem}" class="thumb"></td>
         <td>${p.nome}</td>
+        <td>${p.marca || '-'}</td>
         <td>${p.categoria}</td>
         <td>R$ ${p.preco.toFixed(2).replace('.',',')}</td>
         <td class="action-buttons">
-          <button class="btn-edit" onclick="iniciarEdicao('${p.id}', '${p.nome.replace(/'/g, "\\'")}', '${p.categoria}', '${p.tamanho}', ${p.preco}, '${p.selo || ''}', '${p.imagem}')">Alterar</button>
+          <button class="btn-edit" onclick="iniciarEdicao('${p.id}', '${p.nome.replace(/'/g, "\\'")}', '${p.marca ? p.marca.replace(/'/g, "\\'") : ''}', '${p.categoria}', '${p.tamanho}', ${p.preco}, '${p.selo || ''}', '${p.imagem}')">Alterar</button>
           <button class="btn-danger" onclick="excluir(${p.id})">Excluir</button>
         </td>
       </tr>
@@ -282,7 +330,7 @@
   }
 
   // Iniciar Edição
-  function iniciarEdicao(id, nome, categoria, tamanho, preco, selo, imagem) {
+  function iniciarEdicao(id, nome, marca, categoria, tamanho, preco, selo, imagem) {
     document.getElementById('formTitle').textContent = 'Alterar Peça';
     document.getElementById('editId').value = id;
     document.getElementById('oldImage').value = imagem;
@@ -292,7 +340,18 @@
     document.getElementById('preco').value = preco;
     document.getElementById('selo').value = selo;
     
-    // Assegurar que a categoria da peça está no select
+    const selectMarca = document.getElementById('marca');
+    if (marca) {
+      let marcaExists = Array.from(selectMarca.options).some(opt => opt.value === marca);
+      if(!marcaExists) {
+        const opt = document.createElement('option');
+        opt.value = marca;
+        opt.text = marca;
+        selectMarca.add(opt);
+      }
+      selectMarca.value = marca;
+    }
+    
     const selectCat = document.getElementById('categoria');
     let catExists = Array.from(selectCat.options).some(opt => opt.value === categoria);
     if(!catExists) {

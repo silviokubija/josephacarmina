@@ -312,7 +312,7 @@
           <img src="${p.imagem}" alt="${p.nome}" class="foto-produto">
         </div>
         <div class="produto-info">
-          <span class="produto-categoria">${p.categoria}</span>
+          <span class="produto-categoria">${p.marca ? p.marca + ' • ' : ''}${p.categoria}</span>
           <h3 class="produto-nome">${p.nome}</h3>
           <span class="produto-tamanho">Tamanho ${p.tamanho}</span>
           <div class="produto-rodape">
