@@ -216,7 +216,7 @@
     <div class="contato-info">
       <h3>Informações</h3>
       <p>📧 contato@josephacarmina.com.br</p>
-      <p>💬 WhatsApp: (00) 00000-0000</p>
+      <p>💬 WhatsApp: (11) 98181-5694</p>
       <p>📍 Atendimento online em todo o Brasil</p>
       <p>⏰ Segunda a sábado, 9h às 18h</p>
     </div>
@@ -403,8 +403,8 @@
     const itens = carrinho.map(i => `• ${i.nome} (${i.categoria}, Tam. ${i.tamanho}) — ${formatarPreco(i.preco)}`).join('\n');
     const total = formatarPreco(carrinho.reduce((s, i) => s + i.preco, 0));
     const msg = `Olá! Gostaria de finalizar meu pedido no Josephá Carmina:\n\n${itens}\n\nTotal: ${total}`;
-    // Substitua o número abaixo pelo WhatsApp real da loja (código do país + DDD + número)
-    window.open(`https://wa.me/5500000000000?text=${encodeURIComponent(msg)}`, '_blank');
+    // Enviar para o WhatsApp oficial
+    window.open(`https://wa.me/5511981815694?text=${encodeURIComponent(msg)}`, '_blank');
   }
 
   // ===== MENU MOBILE =====
