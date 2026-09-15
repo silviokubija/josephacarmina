@@ -181,12 +181,9 @@
   </div>
   <input type="text" class="busca" id="busca" placeholder="Buscar peça... ex.: vestido, bolsa, jeans">
   <div class="filtros" id="filtros">
-    <button class="filtro ativo" data-categoria="todos">Todos</button>
-    <button class="filtro" data-categoria="Vestidos">Vestidos</button>
-    <button class="filtro" data-categoria="Blusas">Blusas</button>
-    <button class="filtro" data-categoria="Calças">Calças</button>
-    <button class="filtro" data-categoria="Bolsas">Bolsas</button>
-    <button class="filtro" data-categoria="Acessórios">Acessórios</button>
+    <ul id="menu-categorias">
+      <!-- Categorias serão inseridas aqui dinamicamente pelo JavaScript -->
+    </ul>
   </div>
   <div class="grid-produtos" id="gridProdutos"></div>
 </section>
@@ -274,7 +271,25 @@
       return;
     }
     produtos = data;
+    renderCategorias();
     renderProdutos();
+  }
+
+  // ===== RENDERIZAR CATEGORIAS (MENU DINÂMICO) =====
+  function renderCategorias() {
+    const filtrosDiv = document.getElementById('filtros');
+    // Coletar categorias únicas disponíveis no banco de dados e organizá-las alfabeticamente
+    const categoriasExistentes = [...new Set(produtos.map(p => p.categoria))].sort();
+    
+    // O botão "Todos" sempre existe
+    let html = `<button class="filtro ${filtroAtivo === 'todos' ? 'ativo' : ''}" data-categoria="todos">Todos</button>`;
+    
+    // Adicionar as demais categorias encontradas
+    categoriasExistentes.forEach(cat => {
+      html += `<button class="filtro ${filtroAtivo === cat ? 'ativo' : ''}" data-categoria="${cat}">${cat}</button>`;
+    });
+    
+    filtrosDiv.innerHTML = html;
   }
 
   // ===== RENDERIZAR PRODUTOS =====

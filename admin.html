@@ -13,7 +13,9 @@
   h1, h2 { color: var(--verde-escuro); text-align: center; }
   .hidden { display: none !important; }
   .form-group { margin-bottom: 15px; }
-  label { display: block; margin-bottom: 5px; font-weight: 500; font-size: 0.9rem; }
+  label { display: flex; justify-content: space-between; margin-bottom: 5px; font-weight: 500; font-size: 0.9rem; }
+  .btn-add-cat { color: var(--dourado); cursor: pointer; font-weight: 600; font-size: 1.2rem; line-height: 1; }
+  .btn-add-cat:hover { color: var(--verde-escuro); }
   input, select, button { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-family: inherit; box-sizing: border-box; }
   button { background: var(--verde); color: #fff; border: none; cursor: pointer; font-weight: 600; margin-top: 10px; transition: 0.3s; }
   button:hover { background: var(--verde-escuro); }
@@ -66,7 +68,10 @@
       <input type="text" id="nome" required>
     </div>
     <div class="form-group">
-      <label>Categoria</label>
+      <label>
+        <span>Categoria</span>
+        <span class="btn-add-cat" onclick="adicionarNovaCategoria()" title="Adicionar nova categoria">+</span>
+      </label>
       <select id="categoria" required>
         <option value="Vestidos">Vestidos</option>
         <option value="Blusas">Blusas</option>
@@ -119,6 +124,39 @@
   const adminBox = document.getElementById('adminBox');
   const loginMsg = document.getElementById('loginMsg');
   const adminMsg = document.getElementById('adminMsg');
+
+  // Adicionar Nova Categoria Manualmente
+  function adicionarNovaCategoria() {
+    const nova = prompt("Digite o nome da nova categoria:");
+    if (nova && nova.trim() !== "") {
+      const select = document.getElementById('categoria');
+      const opt = document.createElement('option');
+      opt.value = nova.trim();
+      opt.text = nova.trim();
+      select.add(opt);
+      select.value = nova.trim();
+    }
+  }
+
+  // Atualizar Dropdown com categorias do banco
+  function popularCategoriasNoSelect(produtos) {
+    const select = document.getElementById('categoria');
+    const categoriasPadrao = ['Vestidos', 'Blusas', 'Calças', 'Bolsas', 'Acessórios'];
+    const categoriasDoBanco = produtos.map(p => p.categoria);
+    const todasCategorias = [...new Set([...categoriasPadrao, ...categoriasDoBanco])];
+    
+    const atual = select.value;
+    select.innerHTML = '';
+    todasCategorias.sort().forEach(cat => {
+      const opt = document.createElement('option');
+      opt.value = cat;
+      opt.text = cat;
+      select.add(opt);
+    });
+    if (todasCategorias.includes(atual)) {
+      select.value = atual;
+    }
+  }
 
   // Checar sessão
   async function checkSession() {
@@ -174,19 +212,15 @@
       const oldImage = document.getElementById('oldImage').value;
       let finalImageUrl = oldImage;
 
-      // Se houver um arquivo novo, faz o upload
       if (file) {
         const nomeArquivo = `${Date.now()}_${file.name}`;
         const { data: uploadData, error: uploadError } = await supabaseClient.storage
           .from('fotos')
           .upload(nomeArquivo, file);
-        
         if (uploadError) throw uploadError;
-
         const { data: { publicUrl } } = supabaseClient.storage
           .from('fotos')
           .getPublicUrl(nomeArquivo);
-          
         finalImageUrl = publicUrl;
       }
 
@@ -200,18 +234,16 @@
       };
 
       if (editId) {
-        // Atualizar produto existente
         const { error: updateError } = await supabaseClient.from('produtos').update(produto).eq('id', editId);
         if (updateError) throw updateError;
         showMsg('Peça atualizada com sucesso!');
       } else {
-        // Inserir novo produto
         const { error: insertError } = await supabaseClient.from('produtos').insert([produto]);
         if (insertError) throw insertError;
         showMsg('Peça cadastrada com sucesso!');
       }
 
-      cancelarEdicao(); // Limpa o form e volta ao estado normal
+      cancelarEdicao(); 
       carregarTabela();
 
     } catch (err) {
@@ -231,6 +263,9 @@
       tbody.innerHTML = '<tr><td colspan="5">Erro ao carregar</td></tr>';
       return;
     }
+    
+    // Atualiza o select de categorias dinamicamente
+    popularCategoriasNoSelect(data);
     
     tbody.innerHTML = data.map(p => `
       <tr>
@@ -253,12 +288,21 @@
     document.getElementById('oldImage').value = imagem;
     
     document.getElementById('nome').value = nome;
-    document.getElementById('categoria').value = categoria;
     document.getElementById('tamanho').value = tamanho;
     document.getElementById('preco').value = preco;
     document.getElementById('selo').value = selo;
     
-    // A foto passa a não ser obrigatória na edição
+    // Assegurar que a categoria da peça está no select
+    const selectCat = document.getElementById('categoria');
+    let catExists = Array.from(selectCat.options).some(opt => opt.value === categoria);
+    if(!catExists) {
+      const opt = document.createElement('option');
+      opt.value = categoria;
+      opt.text = categoria;
+      selectCat.add(opt);
+    }
+    selectCat.value = categoria;
+    
     const fotoInput = document.getElementById('foto');
     fotoInput.required = false;
     document.getElementById('fotoLabel').textContent = 'Foto da Peça (Deixe em branco para manter a atual)';
