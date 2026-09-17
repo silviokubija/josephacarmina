@@ -55,12 +55,14 @@
   .btn-dourado{background:var(--dourado)}
   .btn-dourado:hover{background:#a3894e}
 
-  /* ---- BENEFÍCIOS ---- */
-  .beneficios{background:var(--bege-escuro);padding:40px 24px}
-  .beneficios-grid{max-width:1200px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:28px;text-align:center}
-  .beneficio .ico{font-size:1.8rem;margin-bottom:8px}
-  .beneficio h3{color:var(--verde-escuro);font-size:1.15rem;margin-bottom:4px}
-  .beneficio p{font-size:.85rem;color:#6b6b60;font-weight:300}
+  /* ---- BENEFÍCIOS (INSTAGRAM HIGHLIGHTS) ---- */
+  .beneficios { background: #FFFFFF; padding: 50px 24px; }
+  .beneficios-grid { max-width: 1200px; margin: 0 auto; display: flex; justify-content: center; gap: 60px; flex-wrap: wrap; text-align: center; }
+  .beneficio { display: flex; flex-direction: column; align-items: center; cursor: default; }
+  .beneficio-img { width: clamp(80px, 12vw, 130px); height: clamp(80px, 12vw, 130px); border-radius: 50%; border: 4px solid #E0E2E5; margin-bottom: 15px; object-fit: cover; transition: transform 0.3s; }
+  a.beneficio { cursor: pointer; }
+  a.beneficio:hover .beneficio-img { transform: scale(1.05); border-color: var(--dourado); }
+  .beneficio h3 { color: var(--preto); font-size: 1rem; font-weight: 500; margin-bottom: 4px; }
 
   /* ---- CATÁLOGO ---- */
   .catalogo{max-width:1200px;margin:0 auto;padding:70px 24px}
@@ -187,10 +189,22 @@
 <!-- ============ BENEFÍCIOS ============ -->
 <section class="beneficios">
   <div class="beneficios-grid">
-    <div class="beneficio"><div class="ico">🔍</div><h3>Curadoria rigorosa</h3><p>Cada peça é inspecionada, higienizada e fotografada com luz natural.</p></div>
-    <div class="beneficio"><div class="ico">🌱</div><h3>Moda consciente</h3><p>Dar nova vida às roupas reduz resíduos e valoriza o consumo sustentável.</p></div>
-    <div class="beneficio"><div class="ico">🚚</div><h3>Envio para todo o Brasil</h3><p>Empacotamento cuidadoso e envio rápido via Correios ou transportadora.</p></div>
-    <div class="beneficio"><div class="ico">🔄</div><h3>Troca fácil</h3><p>Não serviu? Troca ou devolução sem burocracia em até 7 dias.</p></div>
+    <div class="beneficio">
+      <img src="assets/imagens/Eventos.jpg" alt="Eventos" class="beneficio-img">
+      <h3>Eventos</h3>
+    </div>
+    <div class="beneficio">
+      <img src="assets/imagens/QueroVender.jpg" alt="Quero vender" class="beneficio-img">
+      <h3>Quero vender</h3>
+    </div>
+    <a href="#sobre" class="beneficio" style="text-decoration: none;">
+      <img src="assets/imagens/SobreNos.jpg" alt="Sobre nós" class="beneficio-img">
+      <h3>Sobre nós</h3>
+    </a>
+    <div class="beneficio">
+      <img src="assets/imagens/LojaEnjoei.jpg" alt="Loja Enjoei" class="beneficio-img">
+      <h3>Loja Enjoei</h3>
+    </div>
   </div>
 </section>
 
