@@ -40,15 +40,14 @@
   .filtro.ativo, .filtro:hover { background: var(--verde-escuro); color: #fff; }
 
   /* ---- HERO MASONRY ---- */
-  .hero-masonry { max-width: 1200px; margin: 0 auto 50px; padding: 0 24px; display: grid; grid-template-columns: 1fr 1.2fr 1fr; gap: 16px; height: 600px; }
-  .masonry-col { display: flex; flex-direction: column; gap: 16px; }
-  .masonry-img { width: 100%; object-fit: cover; }
-  .masonry-col-1 .masonry-img, .masonry-col-3 .masonry-img { height: calc(50% - 8px); }
+  .hero-masonry { max-width: 1200px; margin: 0 auto 50px; padding: 0 24px; display: grid; grid-template-columns: 1fr 1fr 1.15fr 1fr; gap: 16px; height: 500px; }
+  .masonry-col { display: flex; flex-direction: column; gap: 16px; height: 100%; }
+  .masonry-img { width: 100%; height: calc(50% - 8px); object-fit: cover; }
   .masonry-center { position: relative; height: 100%; }
   .masonry-center img { height: 100%; width: 100%; object-fit: cover; }
-  .masonry-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.25); display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff; text-align: center; }
-  .masonry-overlay h2 { font-family: 'Cormorant Garamond', serif; font-size: 3rem; margin-bottom: 20px; font-weight: 400; text-shadow: 1px 1px 4px rgba(0,0,0,0.3); line-height: 1.1; }
-  .btn-hero { background: rgba(255,255,255,0.95); color: var(--preto); padding: 12px 30px; border-radius: 30px; text-decoration: none; font-size: 0.75rem; text-transform: uppercase; font-weight: 600; letter-spacing: 2px; transition: background 0.3s; border: none; cursor: pointer; }
+  .masonry-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.1); display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff; text-align: center; }
+  .masonry-overlay h2 { font-family: 'Cormorant Garamond', serif; font-size: 2.2rem; margin-bottom: 20px; font-weight: 500; text-shadow: 1px 1px 4px rgba(0,0,0,0.4); line-height: 1.1; letter-spacing: 1px; text-transform: uppercase;}
+  .btn-hero { background: rgba(255,255,255,0.95); color: #3F4636; padding: 10px 24px; border-radius: 30px; text-decoration: none; font-size: 0.7rem; text-transform: uppercase; font-weight: 600; letter-spacing: 2px; transition: background 0.3s; border: none; cursor: pointer; }
   .btn-hero:hover { background: #fff; color: var(--dourado); }
   .hamburger{display:none;background:none;border:none;font-size:1.6rem;cursor:pointer;color:#fff;}
   .btn{display:inline-block;background:var(--verde);color:#fff;padding:14px 34px;text-decoration:none;letter-spacing:2px;text-transform:uppercase;font-size:.8rem;transition:background .3s;border:none;cursor:pointer}
@@ -168,20 +167,24 @@
 
 <!-- ============ HERO MASONRY ============ -->
 <section class="hero-masonry">
-  <div class="masonry-col masonry-col-1">
-    <img src="assets/imagens/IMG-20260914-WA0006.jpg" alt="Vestidos" class="masonry-img">
-    <img src="assets/imagens/IMG-20260914-WA0009.jpg" alt="Bolsas" class="masonry-img">
+  <div class="masonry-col">
+    <img src="assets/imagens/mock_1.jpg" alt="Vestidos" class="masonry-img">
+    <img src="assets/imagens/mock_2.jpg" alt="Acessórios" class="masonry-img">
+  </div>
+  <div class="masonry-col">
+    <img src="assets/imagens/mock_3.jpg" alt="Bolsas" class="masonry-img">
+    <img src="assets/imagens/mock_4.jpg" alt="Calçados" class="masonry-img">
   </div>
   <div class="masonry-col masonry-center">
-    <img src="assets/imagens/IMG-20260914-WA0010.jpg" alt="Destaque">
+    <img src="assets/imagens/mock_5.jpg" alt="Destaque">
     <div class="masonry-overlay">
       <h2>Novidades<br>da semana</h2>
       <a href="#catalogo" class="btn-hero">Ver coleção</a>
     </div>
   </div>
-  <div class="masonry-col masonry-col-3">
-    <img src="assets/imagens/IMG-20260914-WA0008.jpg" alt="Looks" class="masonry-img">
-    <img src="assets/imagens/IMG-20260914-WA0011.jpg" alt="Sapatos" class="masonry-img">
+  <div class="masonry-col">
+    <img src="assets/imagens/mock_6.jpg" alt="Bolsa Preta" class="masonry-img">
+    <img src="assets/imagens/mock_7.jpg" alt="Sapatos" class="masonry-img">
   </div>
 </section>
 
