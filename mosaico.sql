@@ -20,7 +20,7 @@ USING (auth.role() = 'authenticated');
 -- Apenas o administrador autenticado pode inserir fotos
 CREATE POLICY "Apenas admin pode inserir mosaico" 
 ON public.mosaico FOR INSERT 
-USING (auth.role() = 'authenticated');
+WITH CHECK (auth.role() = 'authenticated');
 
 -- Insere as 7 posições padrão (caso não existam) com caminhos temporários 
 -- (Essas URLs locais vão quebrar se a Vercel não tiver, mas a Van poderá sobreescrevê-las no painel!)
