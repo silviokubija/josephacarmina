@@ -24,26 +24,33 @@
   h1,h2,h3{font-family:'Cormorant Garamond',serif}
   img{max-width:100%;display:block}
 
-  /* ---- HEADER ---- */
-  header{position:sticky;top:0;z-index:100;background:rgba(243,238,227,.96);backdrop-filter:blur(6px);border-bottom:1px solid var(--bege-escuro)}
-  .nav{max-width:1200px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px}
-  .logo{display:flex;flex-direction:row;align-items:center;gap:16px;cursor:pointer}
-  .logo img.simbolo{height:64px;width:auto}
-  .logo img.texto{height:64px;width:auto}
-  .menu{display:flex;gap:28px;list-style:none}
-  .menu a{text-decoration:none;color:var(--verde-escuro);font-size:.8rem;letter-spacing:1.5px;text-transform:uppercase;transition:color .3s}
-  .menu a:hover{color:var(--dourado)}
-  .nav-actions{display:flex;align-items:center;gap:14px}
-  .cart-btn{background:none;border:none;cursor:pointer;font-size:1.3rem;position:relative;color:var(--verde-escuro)}
-  .cart-count{position:absolute;top:-6px;right:-10px;background:var(--dourado);color:#fff;font-size:.65rem;font-weight:600;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center}
-  .hamburger{display:none;background:none;border:none;font-size:1.6rem;cursor:pointer;color:var(--verde-escuro)}
+  /* ---- HEADER NOVO ---- */
+  .top-bar { background: #1A2530; color: #fff; padding: 10px 24px; display: flex; justify-content: flex-end; align-items: center; gap: 24px; font-size: 0.7rem; letter-spacing: 1.5px; text-transform: uppercase; }
+  .top-bar a { color: #fff; text-decoration: none; transition: color 0.3s; }
+  .top-bar a:hover { color: var(--dourado); }
+  .top-bar .cart-btn { background: none; border: none; color: #fff; cursor: pointer; font-size: 1.1rem; display: flex; align-items: center; gap: 6px; }
+  .main-header { background: var(--bege); padding: 40px 24px 0; text-align: center; position: relative; max-width: 1200px; margin: 0 auto; }
+  .header-logo-row { display: flex; justify-content: center; align-items: center; position: relative; margin-bottom: 30px; }
+  .header-logo-text { font-family: 'Cormorant Garamond', serif; font-size: clamp(2rem, 5vw, 3.5rem); color: var(--verde-escuro); font-weight: 500; letter-spacing: 2px; }
+  .header-logo-stamp { position: absolute; right: 0; height: 60px; width: auto; mix-blend-mode: multiply; }
+  
+  /* ---- FILTROS (MOVIDOS PARA O HEADER) ---- */
+  .filtros { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-bottom: 40px; }
+  .filtro { background: none; border: 1px solid var(--verde-escuro); color: var(--verde-escuro); padding: 8px 24px; font-size: 0.75rem; letter-spacing: 1.5px; text-transform: uppercase; cursor: pointer; border-radius: 30px; transition: all 0.3s; }
+  .filtro.ativo, .filtro:hover { background: var(--verde-escuro); color: #fff; }
 
-  /* ---- HERO ---- */
-  .hero{max-width:1200px;margin:0 auto;padding:70px 24px 50px;text-align:center}
-  .hero img.logo-hero{height:110px;margin:0 auto 24px}
-  .hero h1{font-size:clamp(2.2rem,5.5vw,3.6rem);color:var(--verde-escuro);font-weight:500;margin-bottom:16px}
-  .hero h1 em{color:var(--dourado);font-style:italic}
-  .hero p{max-width:640px;margin:0 auto 32px;color:#6b6b60;font-weight:300;font-size:1.05rem}
+  /* ---- HERO MASONRY ---- */
+  .hero-masonry { max-width: 1200px; margin: 0 auto 50px; padding: 0 24px; display: grid; grid-template-columns: 1fr 1.2fr 1fr; gap: 16px; height: 600px; }
+  .masonry-col { display: flex; flex-direction: column; gap: 16px; }
+  .masonry-img { width: 100%; object-fit: cover; }
+  .masonry-col-1 .masonry-img, .masonry-col-3 .masonry-img { height: calc(50% - 8px); }
+  .masonry-center { position: relative; height: 100%; }
+  .masonry-center img { height: 100%; width: 100%; object-fit: cover; }
+  .masonry-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.25); display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff; text-align: center; }
+  .masonry-overlay h2 { font-family: 'Cormorant Garamond', serif; font-size: 3rem; margin-bottom: 20px; font-weight: 400; text-shadow: 1px 1px 4px rgba(0,0,0,0.3); line-height: 1.1; }
+  .btn-hero { background: rgba(255,255,255,0.95); color: var(--preto); padding: 12px 30px; border-radius: 30px; text-decoration: none; font-size: 0.75rem; text-transform: uppercase; font-weight: 600; letter-spacing: 2px; transition: background 0.3s; border: none; cursor: pointer; }
+  .btn-hero:hover { background: #fff; color: var(--dourado); }
+  .hamburger{display:none;background:none;border:none;font-size:1.6rem;cursor:pointer;color:#fff;}
   .btn{display:inline-block;background:var(--verde);color:#fff;padding:14px 34px;text-decoration:none;letter-spacing:2px;text-transform:uppercase;font-size:.8rem;transition:background .3s;border:none;cursor:pointer}
   .btn:hover{background:var(--verde-escuro)}
   .btn-dourado{background:var(--dourado)}
@@ -137,35 +144,45 @@
 </head>
 <body>
 
-<!-- ============ HEADER ============ -->
-<header>
-  <nav class="nav">
-    <div class="logo" onclick="location.href='#inicio'">
-      <img src="assets/imagens/Logo_simbolo.jpg" alt="Símbolo Josephá Carmina" class="simbolo">
-      <img src="assets/imagens/Logo_texto.jpg" alt="Josephá Carmina" class="texto">
-    </div>
-    <ul class="menu" id="menu">
-      <li><a href="#inicio">Início</a></li>
-      <li><a href="#catalogo">Catálogo</a></li>
-      <li><a href="#sobre">Sobre</a></li>
-      <li><a href="#contato">Contato</a></li>
-    </ul>
-    <div class="nav-actions">
-      <button class="cart-btn" onclick="abrirCarrinho()" aria-label="Abrir carrinho">🛍️<span class="cart-count" id="cartCount">0</span></button>
-      <button class="hamburger" onclick="toggleMenu()" aria-label="Abrir menu">☰</button>
-    </div>
-  </nav>
+<!-- ============ HEADER NOVO ============ -->
+<div class="top-bar">
+  <a href="#sobre">Sobre</a>
+  <a href="#">Blog</a>
+  <a href="#contato">Contato</a>
+  <a href="admin.html">Minha Conta</a>
+  <button class="cart-btn" onclick="abrirCarrinho()" aria-label="Abrir carrinho">
+    🛍️<span class="cart-count" id="cartCount">0</span>
+  </button>
+</div>
+
+<header class="main-header" id="inicio">
+  <div class="header-logo-row">
+    <div class="header-logo-text">Josephá Carmina</div>
+    <img src="assets/imagens/Logo_simbolo.jpg" alt="Símbolo" class="header-logo-stamp">
+  </div>
+  
+  <div class="filtros" id="filtros">
+    <!-- As categorias serão inseridas aqui dinamicamente pelo JavaScript (ex: Vestidos, Acessórios, Calçados) -->
+  </div>
 </header>
 
-<!-- ============ HERO ============ -->
-<section class="hero" id="inicio">
-  <div style="display:flex; flex-direction:column; align-items:center; gap:16px; margin-bottom:32px; pointer-events:none;">
-    <img src="assets/imagens/Logo_simbolo.jpg" alt="Símbolo" style="height:130px; width:auto;">
-    <img src="assets/imagens/Logo_texto.jpg" alt="Josephá Carmina" style="height:130px; width:auto;">
+<!-- ============ HERO MASONRY ============ -->
+<section class="hero-masonry">
+  <div class="masonry-col masonry-col-1">
+    <img src="assets/imagens/IMG-20260914-WA0006.jpg" alt="Vestidos" class="masonry-img">
+    <img src="assets/imagens/IMG-20260914-WA0009.jpg" alt="Bolsas" class="masonry-img">
   </div>
-  <h1>Moda feminina <em>com curadoria</em>,<br>peças únicas com alma.</h1>
-  <p>Cada peça do Josephá Carmina é selecionada à mão: roupas, bolsas e acessórios em excelente estado, com estilo atemporal e preço justo. Sustentável, elegante e só seu.</p>
-  <a href="#catalogo" class="btn btn-dourado">Ver peças disponíveis</a>
+  <div class="masonry-col masonry-center">
+    <img src="assets/imagens/IMG-20260914-WA0010.jpg" alt="Destaque">
+    <div class="masonry-overlay">
+      <h2>Novidades<br>da semana</h2>
+      <a href="#catalogo" class="btn-hero">Ver coleção</a>
+    </div>
+  </div>
+  <div class="masonry-col masonry-col-3">
+    <img src="assets/imagens/IMG-20260914-WA0008.jpg" alt="Looks" class="masonry-img">
+    <img src="assets/imagens/IMG-20260914-WA0011.jpg" alt="Sapatos" class="masonry-img">
+  </div>
 </section>
 
 <!-- ============ BENEFÍCIOS ============ -->
@@ -185,11 +202,6 @@
     <p>Peças únicas — quando sair, não volta.</p>
   </div>
   <input type="text" class="busca" id="busca" placeholder="Buscar peça... ex.: vestido, bolsa, jeans">
-  <div class="filtros" id="filtros">
-    <ul id="menu-categorias">
-      <!-- Categorias serão inseridas aqui dinamicamente pelo JavaScript -->
-    </ul>
-  </div>
   <div class="grid-produtos" id="gridProdutos"></div>
 </section>
 
