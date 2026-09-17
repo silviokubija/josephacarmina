@@ -168,23 +168,23 @@
 <!-- ============ HERO MASONRY ============ -->
 <section class="hero-masonry">
   <div class="masonry-col">
-    <img src="assets/imagens/mock_1.jpg" alt="Vestidos" class="masonry-img">
-    <img src="assets/imagens/mock_2.jpg" alt="Acessórios" class="masonry-img">
+    <img src="assets/imagens/mock_1.jpg" id="mosaico-1" alt="Imagem 1" class="masonry-img">
+    <img src="assets/imagens/mock_2.jpg" id="mosaico-2" alt="Imagem 2" class="masonry-img">
   </div>
   <div class="masonry-col">
-    <img src="assets/imagens/mock_3.jpg" alt="Bolsas" class="masonry-img">
-    <img src="assets/imagens/mock_4.jpg" alt="Calçados" class="masonry-img">
+    <img src="assets/imagens/mock_3.jpg" id="mosaico-3" alt="Imagem 3" class="masonry-img">
+    <img src="assets/imagens/mock_4.jpg" id="mosaico-4" alt="Imagem 4" class="masonry-img">
   </div>
   <div class="masonry-col masonry-center">
-    <img src="assets/imagens/mock_5.jpg" alt="Destaque">
+    <img src="assets/imagens/mock_5.jpg" id="mosaico-5" alt="Imagem Destaque">
     <div class="masonry-overlay">
       <h2>Novidades<br>da semana</h2>
       <a href="#catalogo" class="btn-hero">Ver coleção</a>
     </div>
   </div>
   <div class="masonry-col">
-    <img src="assets/imagens/mock_6.jpg" alt="Bolsa Preta" class="masonry-img">
-    <img src="assets/imagens/mock_7.jpg" alt="Sapatos" class="masonry-img">
+    <img src="assets/imagens/mock_6.jpg" id="mosaico-6" alt="Imagem 6" class="masonry-img">
+    <img src="assets/imagens/mock_7.jpg" id="mosaico-7" alt="Imagem 7" class="masonry-img">
   </div>
 </section>
 
@@ -282,6 +282,19 @@
   let produtos = [];
   let filtroAtivo = 'todos';
   let carrinho = JSON.parse(localStorage.getItem('jc-carrinho')) || [];
+
+  // ===== CARREGAR MOSAICO =====
+  async function carregarMosaico() {
+    const { data, error } = await supabaseClient.from('mosaico').select('*');
+    if (!error && data) {
+      data.forEach(item => {
+        if (item.url_imagem) {
+          const img = document.getElementById('mosaico-' + item.posicao);
+          if (img) img.src = item.url_imagem;
+        }
+      });
+    }
+  }
 
   // ===== BUSCAR DADOS DO SUPABASE =====
   async function carregarProdutos() {
@@ -436,6 +449,7 @@
   }
 
   // ===== INICIALIZAÇÃO =====
+  carregarMosaico();
   carregarProdutos();
   atualizarCarrinho();
 </script>

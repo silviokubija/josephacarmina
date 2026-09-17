@@ -34,6 +34,12 @@
   .msg.success { background: #d4edda; color: #155724; display: block; }
   .msg.error { background: #f8d7da; color: #721c24; display: block; }
   .action-buttons { display: flex; gap: 5px; }
+  .tabs { display: flex; margin-bottom: 20px; border-bottom: 1px solid #ccc; }
+  .tab { padding: 10px 20px; cursor: pointer; font-weight: 600; color: #999; }
+  .tab.active { color: var(--verde-escuro); border-bottom: 3px solid var(--verde-escuro); }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+  .mosaico-upload-row { display: flex; align-items: center; gap: 10px; }
 </style>
 </head>
 <body>
@@ -58,9 +64,16 @@
   <button class="logout-btn" onclick="logout()">Sair</button>
   <h1>Painel Josephá Carmina</h1>
   
-  <h2 id="formTitle">Adicionar Nova Peça</h2>
-  <div id="adminMsg" class="msg"></div>
-  <form id="addForm">
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('produtos', this)">Catálogo de Peças</div>
+    <div class="tab" onclick="switchTab('mosaico', this)">Mosaico (Capa)</div>
+  </div>
+  
+  <!-- === ABA PRODUTOS === -->
+  <div id="tab-produtos" class="tab-content active">
+    <h2 id="formTitle">Adicionar Nova Peça</h2>
+    <div id="adminMsg" class="msg"></div>
+    <form id="addForm">
     <input type="hidden" id="editId">
     <input type="hidden" id="oldImage">
     <div class="form-group">
@@ -123,8 +136,29 @@
     </thead>
     <tbody id="tabelaProdutos"></tbody>
   </table>
+  </div> <!-- FIM ABA PRODUTOS -->
+  
+  <!-- === ABA MOSAICO === -->
+  <div id="tab-mosaico" class="tab-content">
+    <h2>Gerenciar Fotos da Capa</h2>
+    <p style="text-align:center; font-size:0.9rem;">Estas são as 7 fotos que compõem o mosaico na página inicial.</p>
+    <div id="mosaicoMsg" class="msg"></div>
+    <table id="tabelaMosaico">
+      <thead>
+        <tr>
+          <th>Posição</th>
+          <th>Imagem Atual</th>
+          <th>Nova Imagem</th>
+          <th>Ação</th>
+        </tr>
+      </thead>
+      <tbody id="listaMosaico">
+        <!-- Preenchido via JS -->
+      </tbody>
+    </table>
+  </div> <!-- FIM ABA MOSAICO -->
+  
 </div>
-
 <script>
   const SUPABASE_URL = 'https://qlfprztximxnmuycahcw.supabase.co';
   const SUPABASE_KEY = 'sb_publishable_DwtYsPo0iobWCtYRPxzxvg_ZFUVfnlG';
@@ -400,6 +434,95 @@
   }
 
   checkSession();
+
+  // ===== TABS =====
+  function switchTab(tabId, element) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    element.classList.add('active');
+    document.getElementById('tab-' + tabId).classList.add('active');
+    if(tabId === 'mosaico') carregarMosaico();
+  }
+
+  // ===== MOSAICO =====
+  async function carregarMosaico() {
+    const { data, error } = await supabaseClient.from('mosaico').select('*').order('posicao', { ascending: true });
+    if(error) { console.error(error); return; }
+    
+    const tbody = document.getElementById('listaMosaico');
+    tbody.innerHTML = '';
+    
+    const posicoes = [1,2,3,4,5,6,7];
+    posicoes.forEach(pos => {
+      const item = data.find(d => d.posicao === pos) || { posicao: pos, url_imagem: '' };
+      
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${item.posicao} ${item.posicao === 5 ? '(Centro Grande)' : ''}</td>
+        <td>
+          ${item.url_imagem ? `<img src="${item.url_imagem}" class="thumb">` : 'Vazio'}
+        </td>
+        <td>
+          <input type="file" id="file-mosaico-${item.posicao}" accept="image/*">
+        </td>
+        <td>
+          <button class="btn-edit" onclick="salvarFotoMosaico(${item.posicao})">Salvar</button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  async function salvarFotoMosaico(pos) {
+    const fileInput = document.getElementById('file-mosaico-' + pos);
+    const file = fileInput.files[0];
+    const msgDiv = document.getElementById('mosaicoMsg');
+    
+    if(!file) {
+      msgDiv.className = 'msg error';
+      msgDiv.innerText = 'Por favor, selecione uma imagem primeiro!';
+      setTimeout(() => msgDiv.style.display = 'none', 3000);
+      return;
+    }
+
+    msgDiv.className = 'msg';
+    msgDiv.style.display = 'block';
+    msgDiv.style.color = '#333';
+    msgDiv.innerText = 'Fazendo upload da imagem...';
+
+    const fileExt = file.name.split('.').pop();
+    const fileName = `mosaico_${pos}_${Date.now()}.${fileExt}`;
+    
+    const { data: uploadData, error: uploadError } = await supabaseClient
+      .storage
+      .from('fotos')
+      .upload(fileName, file);
+
+    if (uploadError) {
+      msgDiv.className = 'msg error';
+      msgDiv.innerText = 'Erro ao enviar foto: ' + uploadError.message;
+      return;
+    }
+
+    const { data: publicUrlData } = supabaseClient.storage.from('fotos').getPublicUrl(fileName);
+    const imageUrl = publicUrlData.publicUrl;
+
+    const { error: dbError } = await supabaseClient
+      .from('mosaico')
+      .upsert({ posicao: pos, url_imagem: imageUrl }, { onConflict: 'posicao' });
+
+    if(dbError) {
+      msgDiv.className = 'msg error';
+      msgDiv.innerText = 'Erro ao salvar no banco: ' + dbError.message;
+      return;
+    }
+
+    msgDiv.className = 'msg success';
+    msgDiv.innerText = 'Foto da posição ' + pos + ' atualizada com sucesso!';
+    fileInput.value = '';
+    carregarMosaico();
+    setTimeout(() => msgDiv.style.display = 'none', 3000);
+  }
 </script>
 </body>
 </html>
