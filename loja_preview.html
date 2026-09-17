@@ -40,11 +40,11 @@
   .filtro.ativo, .filtro:hover { background: var(--verde-escuro); color: #fff; }
 
   /* ---- HERO MASONRY ---- */
-  .hero-masonry { max-width: 1200px; margin: 0 auto 50px; padding: 0 24px; display: grid; grid-template-columns: 1fr 1fr 1.15fr 1fr; gap: 16px; height: 500px; }
-  .masonry-col { display: flex; flex-direction: column; gap: 16px; height: 100%; }
-  .masonry-img { width: 100%; height: calc(50% - 8px); object-fit: cover; }
-  .masonry-center { position: relative; height: 100%; }
-  .masonry-center img { height: 100%; width: 100%; object-fit: cover; }
+  .hero-masonry { max-width: 1200px; margin: 0 auto 50px; padding: 0 24px; display: grid; grid-template-columns: 1fr 1fr 1.15fr 1fr; gap: 16px; height: 500px; overflow: hidden; }
+  .masonry-col { display: flex; flex-direction: column; gap: 16px; height: 100%; min-height: 0; }
+  .masonry-img { width: 100%; height: calc(50% - 8px); object-fit: cover; min-height: 0; }
+  .masonry-center { position: relative; height: 100%; min-height: 0; }
+  .masonry-center img { height: 100%; width: 100%; object-fit: cover; min-height: 0; }
   .masonry-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.1); display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff; text-align: center; }
   .masonry-overlay h2 { font-family: 'Cormorant Garamond', serif; font-size: 2.2rem; margin-bottom: 20px; font-weight: 500; text-shadow: 1px 1px 4px rgba(0,0,0,0.4); line-height: 1.1; letter-spacing: 1px; text-transform: uppercase;}
   .btn-hero { background: rgba(255,255,255,0.95); color: #3F4636; padding: 10px 24px; border-radius: 30px; text-decoration: none; font-size: 0.7rem; text-transform: uppercase; font-weight: 600; letter-spacing: 2px; transition: background 0.3s; border: none; cursor: pointer; }
