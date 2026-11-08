@@ -302,18 +302,38 @@
   <form id="loginForm">
     <div class="form-group">
       <label>E-mail</label>
-      <input type="email" id="email" required>
+      <input type="email" id="email" required placeholder="Ex: mariavania.sousa@gmail.com">
     </div>
     <div class="form-group">
       <label>Senha</label>
       <input type="password" id="password" required>
     </div>
     <button type="submit">Entrar</button>
+    <button type="button" class="btn-cancel" style="background:transparent; color:var(--verde-escuro); border:1px solid #ccc; margin-top:10px;" onclick="esqueciSenha()">
+      🔑 Esqueci minha senha
+    </button>
+  </form>
+</div>
+
+<div class="container hidden" id="recoveryBox">
+  <h1>Definir Nova Senha</h1>
+  <p style="text-align:center; font-size:0.9rem; color:#555;">Digite abaixo a sua nova senha de acesso ao painel:</p>
+  <div id="recoveryMsg" class="msg"></div>
+  <form id="recoveryForm">
+    <div class="form-group">
+      <label>Nova Senha (mínimo 6 caracteres)</label>
+      <input type="password" id="newPassword" minlength="6" required>
+    </div>
+    <button type="submit" id="btnSavePass">Salvar Nova Senha</button>
+    <button type="button" class="btn-cancel" onclick="fecharTelaNovaSenha()">Voltar</button>
   </form>
 </div>
 
 <div class="container hidden" id="adminBox">
-  <button class="logout-btn" onclick="logout()">Sair</button>
+  <div style="display:flex; justify-content:flex-end; gap:8px;">
+    <button class="logout-btn" style="float:none; background:var(--dourado);" onclick="abrirTelaNovaSenha()">🔑 Trocar Senha</button>
+    <button class="logout-btn" style="float:none;" onclick="logout()">Sair</button>
+  </div>
   <h1>Painel Josephá Carmina</h1>
   
   <div class="tabs">
@@ -641,19 +661,97 @@
     atualizarSelectsCategoria();
   }
 
-  // ===== SESSÃO E AUTENTICAÇÃO =====
+  // ===== SESSÃO, LOGIN E RECUPERAÇÃO DE SENHA =====
+  const recoveryBox = document.getElementById('recoveryBox');
+  const recoveryMsg = document.getElementById('recoveryMsg');
+  let emModoRecuperacao = window.location.hash.includes('type=recovery');
+
+  supabaseClient.auth.onAuthStateChange((event, session) => {
+    if (event === 'PASSWORD_RECOVERY') {
+      emModoRecuperacao = true;
+      abrirTelaNovaSenha();
+    }
+  });
+
   async function checkSession() {
     const { data: { session } } = await supabaseClient.auth.getSession();
+    if (emModoRecuperacao) {
+      abrirTelaNovaSenha();
+      return;
+    }
     if (session) {
       loginBox.classList.add('hidden');
+      recoveryBox.classList.add('hidden');
       adminBox.classList.remove('hidden');
       await carregarMarcas();
       await carregarTabela();
     } else {
       loginBox.classList.remove('hidden');
+      recoveryBox.classList.add('hidden');
       adminBox.classList.add('hidden');
     }
   }
+
+  async function esqueciSenha() {
+    loginMsg.className = 'msg';
+    let email = document.getElementById('email').value.trim();
+    if (!email) {
+      email = (prompt('Digite o seu e-mail cadastrado (ex: mariavania.sousa@gmail.com):') || '').trim();
+      if (email) document.getElementById('email').value = email;
+    }
+    if (!email) return;
+
+    const urlRetorno = window.location.origin + window.location.pathname;
+    const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+      redirectTo: urlRetorno
+    });
+
+    if (error) {
+      loginMsg.textContent = 'Erro ao enviar e-mail: ' + error.message;
+      loginMsg.classList.add('error');
+    } else {
+      loginMsg.textContent = '✅ Enviamos um link de redefinição para ' + email + '! Verifique sua Caixa de Entrada e a pasta Spam.';
+      loginMsg.classList.add('success');
+    }
+  }
+
+  function abrirTelaNovaSenha() {
+    loginBox.classList.add('hidden');
+    adminBox.classList.add('hidden');
+    recoveryBox.classList.remove('hidden');
+    recoveryMsg.className = 'msg';
+    document.getElementById('newPassword').value = '';
+  }
+
+  function fecharTelaNovaSenha() {
+    emModoRecuperacao = false;
+    checkSession();
+  }
+
+  document.getElementById('recoveryForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const newPassword = document.getElementById('newPassword').value;
+    const btn = document.getElementById('btnSavePass');
+    btn.disabled = true;
+    btn.textContent = 'Salvando...';
+    recoveryMsg.className = 'msg';
+
+    const { error } = await supabaseClient.auth.updateUser({ password: newPassword });
+    btn.disabled = false;
+    btn.textContent = 'Salvar Nova Senha';
+
+    if (error) {
+      recoveryMsg.textContent = 'Erro ao atualizar senha: ' + error.message;
+      recoveryMsg.classList.add('error');
+    } else {
+      emModoRecuperacao = false;
+      if (window.location.hash) {
+        history.replaceState(null, '', window.location.pathname);
+      }
+      alert('✅ Nova senha salva com sucesso!');
+      checkSession();
+    }
+  });
 
   document.getElementById('loginForm').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -662,7 +760,7 @@
     const password = document.getElementById('password').value;
     const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
     if (error) {
-      loginMsg.textContent = 'Erro: ' + error.message;
+      loginMsg.textContent = 'Erro: E-mail ou senha incorretos.';
       loginMsg.classList.add('error');
     } else {
       checkSession();
