@@ -78,15 +78,17 @@
   .grid-produtos{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:28px}
   .produto{background:var(--branco);border:1px solid var(--bege-escuro);transition:transform .3s,box-shadow .3s;display:flex;flex-direction:column}
   .produto:hover{transform:translateY(-4px);box-shadow:0 12px 28px rgba(31,35,25,.1)}
-  .produto-imagem{aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:4.5rem;background:linear-gradient(145deg,#F6F1E6,#EAE1CC);position:relative;overflow:hidden}
-  .produto-imagem img.foto-produto{width:100%;height:100%;object-fit:cover}
+  .produto-imagem{aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:4.5rem;background:linear-gradient(145deg,#F6F1E6,#EAE1CC);position:relative;overflow:hidden;cursor:zoom-in}
+  .produto-imagem img.foto-produto{width:100%;height:100%;object-fit:cover;transition:transform .35s ease}
+  .produto-imagem:hover img.foto-produto{transform:scale(1.03)}
+  .zoom-badge{position:absolute;bottom:10px;right:10px;background:rgba(255,253,248,.9);color:var(--verde-escuro);width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.82rem;pointer-events:none;box-shadow:0 2px 6px rgba(0,0,0,.15);z-index:5}
   .carrinho-item .foto-carrinho{width:40px;height:40px;object-fit:cover;border-radius:4px}
-  .produto-imagem .selo{position:absolute;top:10px;left:10px;background:var(--dourado);color:#fff;font-size:.6rem;letter-spacing:1px;padding:4px 10px;text-transform:uppercase;z-index:10}
   .produto-info{padding:18px;display:flex;flex-direction:column;flex:1}
   .produto-categoria{font-size:.65rem;letter-spacing:2px;text-transform:uppercase;color:var(--dourado);margin-bottom:4px}
   .produto-nome{font-family:'Cormorant Garamond',serif;font-size:1.2rem;color:var(--verde-escuro);margin-bottom:4px}
-  .produto-tamanho{font-size:.8rem;color:#8a8a7c;margin-bottom:10px}
-  .produto-rodape{display:flex;align-items:center;justify-content:space-between;margin-top:auto}
+  .produto-tamanho{font-size:.8rem;color:#8a8a7c;margin-bottom:8px}
+  .produto-obs{font-size:.78rem;color:#5c6154;margin-bottom:12px;line-height:1.45;font-weight:400;background:#FAF6ED;padding:6px 10px;border-left:2px solid var(--dourado);border-radius:0 4px 4px 0}
+  .produto-rodape{display:flex;align-items:center;justify-content:space-between;margin-top:auto;padding-top:4px}
   .produto-preco{font-size:1.15rem;font-weight:600;color:var(--preto)}
   .add-btn{background:var(--verde);color:#fff;border:none;padding:9px 16px;font-size:.7rem;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;transition:background .3s}
   .add-btn:hover{background:var(--verde-escuro)}
@@ -135,6 +137,15 @@
   .carrinho-footer{padding:20px 24px;border-top:1px solid var(--bege-escuro)}
   .total-linha{display:flex;justify-content:space-between;margin-bottom:14px;font-weight:600}
   .carrinho-footer .btn{width:100%;text-align:center}
+
+  /* ---- MODAL DE ZOOM (VER FOTO INTEIRA) ---- */
+  .zoom-modal{position:fixed;inset:0;background:rgba(0,0,0,.86);z-index:300;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;opacity:0;visibility:hidden;transition:opacity .25s,visibility .25s;cursor:zoom-out}
+  .zoom-modal.aberto{opacity:1;visibility:visible}
+  .zoom-modal-fechar{position:absolute;top:18px;right:24px;background:rgba(255,255,255,.92);color:var(--preto);border:none;width:42px;height:42px;border-radius:50%;font-size:1.3rem;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 10px rgba(0,0,0,.35);z-index:310}
+  .zoom-modal-fechar:hover{background:#fff;color:var(--dourado)}
+  .zoom-modal img,.zoom-modal video{max-width:92vw;max-height:82vh;width:auto;height:auto;object-fit:contain;border-radius:6px;box-shadow:0 10px 35px rgba(0,0,0,.5);cursor:default}
+  .zoom-modal-legenda{color:#fff;margin-top:12px;font-family:'Cormorant Garamond',serif;font-size:1.3rem;text-align:center;max-width:90vw;text-shadow:0 1px 4px rgba(0,0,0,.6)}
+  .zoom-modal-obs{color:#e9e1cf;margin-top:4px;font-size:.85rem;font-weight:300;text-align:center;max-width:85vw}
 
   @media(max-width:820px){
     .menu{position:fixed;top:64px;right:-100%;width:70%;max-width:300px;background:var(--bege);flex-direction:column;padding:30px 24px;gap:20px;border-left:1px solid var(--bege-escuro);transition:right .35s;z-index:99}
@@ -308,6 +319,15 @@
   </div>
 </aside>
 
+<!-- ============ MODAL ZOOM FOTO INTEIRA ============ -->
+<div class="zoom-modal" id="zoomModal" onclick="fecharZoom()">
+  <button class="zoom-modal-fechar" onclick="fecharZoom()" aria-label="Fechar imagem">✕</button>
+  <img id="zoomModalImg" src="" alt="Imagem ampliada" onclick="event.stopPropagation()">
+  <video id="zoomModalVideo" src="" autoplay loop muted playsinline controls style="display:none" onclick="event.stopPropagation()"></video>
+  <div class="zoom-modal-legenda" id="zoomModalLegenda"></div>
+  <div class="zoom-modal-obs" id="zoomModalObs"></div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
   // ===== SUPABASE =====
@@ -350,17 +370,26 @@
           video.setAttribute('muted', '');
           video.setAttribute('playsinline', '');
           video.setAttribute('preload', 'auto');
+          video.style.cursor = 'zoom-in';
+          video.title = 'Clique para ampliar';
+          video.onclick = () => abrirZoomMidia(item.url_imagem, '', '');
           elAtual.replaceWith(video);
           video.play().catch(() => {});
         } else {
           if (elAtual.tagName.toLowerCase() === 'img') {
             elAtual.src = item.url_imagem;
+            elAtual.style.cursor = 'zoom-in';
+            elAtual.title = 'Clique para ver a foto inteira';
+            elAtual.onclick = () => abrirZoomMidia(item.url_imagem, '', '');
           } else {
             const img = document.createElement('img');
             img.id = 'mosaico-' + item.posicao;
             if (elAtual.className) img.className = elAtual.className;
             img.alt = item.posicao === 5 ? 'Imagem Destaque' : ('Imagem ' + item.posicao);
             img.src = item.url_imagem;
+            img.style.cursor = 'zoom-in';
+            img.title = 'Clique para ver a foto inteira';
+            img.onclick = () => abrirZoomMidia(item.url_imagem, '', '');
             elAtual.replaceWith(img);
           }
         }
@@ -410,24 +439,82 @@
       grid.innerHTML = '<p style="grid-column:1/-1;text-align:center;color:#8a8a7c;font-weight:300">Nenhuma peça encontrada. Tente outro filtro ou busca.</p>';
       return;
     }
-    grid.innerHTML = lista.map(p => `
+    grid.innerHTML = lista.map(p => {
+      const imgLimpa = String(p.imagem || '').split('#cod=')[0];
+      const obs = (p.selo || '').trim();
+      return `
       <article class="produto">
-        <div class="produto-imagem">
-          ${p.selo ? `<span class="selo">${p.selo}</span>` : ''}
-          <img src="${p.imagem}" alt="${p.nome}" class="foto-produto">
+        <div class="produto-imagem" onclick="abrirZoomProduto(${p.id})" title="Clique para ver a foto inteira">
+          <img src="${imgLimpa}" alt="${p.nome}" class="foto-produto">
+          <span class="zoom-badge" aria-hidden="true">🔍</span>
         </div>
         <div class="produto-info">
           <span class="produto-categoria">${p.marca ? p.marca + ' • ' : ''}${p.categoria}</span>
           <h3 class="produto-nome">${p.nome}</h3>
           <span class="produto-tamanho">Tamanho ${p.tamanho}</span>
+          ${obs ? `<p class="produto-obs">${obs}</p>` : ''}
           <div class="produto-rodape">
             <span class="produto-preco">${formatarPreco(p.preco)}</span>
             <button class="add-btn" onclick="adicionarAoCarrinho(${p.id})">Adicionar</button>
           </div>
         </div>
       </article>
-    `).join('');
+    `;
+    }).join('');
   }
+
+  // ===== ZOOM DA FOTO / VÍDEO INTEIRO =====
+  function abrirZoomProduto(id) {
+    const p = produtos.find(x => Number(x.id) === Number(id));
+    if (!p) return;
+    const imgLimpa = String(p.imagem || '').split('#cod=')[0];
+    const titulo = `${p.nome} — Tam. ${p.tamanho} (${formatarPreco(p.preco)})`;
+    const obs = (p.selo || '').trim();
+    abrirZoomMidia(imgLimpa, titulo, obs);
+  }
+
+  function abrirZoomMidia(url, legenda = '', obs = '') {
+    if (!url) return;
+    const modal = document.getElementById('zoomModal');
+    const imgEl = document.getElementById('zoomModalImg');
+    const vidEl = document.getElementById('zoomModalVideo');
+    const legEl = document.getElementById('zoomModalLegenda');
+    const obsEl = document.getElementById('zoomModalObs');
+
+    legEl.textContent = legenda || '';
+    obsEl.textContent = obs || '';
+
+    if (ehMidiaVideo(url)) {
+      imgEl.style.display = 'none';
+      imgEl.src = '';
+      vidEl.src = url;
+      vidEl.style.display = 'block';
+      vidEl.play().catch(() => {});
+    } else {
+      vidEl.pause();
+      vidEl.style.display = 'none';
+      vidEl.src = '';
+      imgEl.src = url;
+      imgEl.style.display = 'block';
+    }
+    modal.classList.add('aberto');
+  }
+
+  function fecharZoom() {
+    const modal = document.getElementById('zoomModal');
+    const imgEl = document.getElementById('zoomModalImg');
+    const vidEl = document.getElementById('zoomModalVideo');
+    modal.classList.remove('aberto');
+    imgEl.src = '';
+    if (vidEl) {
+      vidEl.pause();
+      vidEl.src = '';
+    }
+  }
+
+  window.addEventListener('keydown', e => {
+    if (e.key === 'Escape') fecharZoom();
+  });
 
   function formatarPreco(v){
     return v.toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
