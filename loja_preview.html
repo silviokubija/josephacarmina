@@ -340,7 +340,7 @@
       console.error('Erro ao buscar produtos:', error);
       return;
     }
-    produtos = data;
+    produtos = (data || []).filter(p => p.categoria !== 'RASCUNHO_FILA' && p.nome !== 'RASCUNHO_FILA');
     renderCategorias();
     renderProdutos();
   }
