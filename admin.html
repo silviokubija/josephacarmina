@@ -37,7 +37,9 @@
   table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 0.9rem; }
   th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
   th { background: var(--bege); }
-  img.thumb { width: 45px; height: 45px; object-fit: cover; border-radius: 4px; cursor: zoom-in; }
+  img.thumb, video.thumb { width: 45px; height: 45px; object-fit: cover; border-radius: 4px; cursor: zoom-in; display: block; }
+  .mosaico-thumb-wrap { display: inline-flex; align-items: center; gap: 8px; }
+  .badge-video { background: var(--verde-escuro); color: #fff; font-size: 0.72rem; padding: 2px 8px; border-radius: 99px; font-weight: 600; white-space: nowrap; }
   .msg { padding: 12px; margin-bottom: 15px; border-radius: 6px; text-align: center; display: none; font-weight: 500; }
   .msg.success { background: #d4edda; color: #155724; display: block; }
   .msg.error { background: #f8d7da; color: #721c24; display: block; }
@@ -329,7 +331,7 @@
     padding: 20px;
     cursor: zoom-out;
   }
-  .zoom-modal img {
+  .zoom-modal img, .zoom-modal video {
     max-width: 95vw;
     max-height: 90vh;
     border-radius: 8px;
@@ -359,9 +361,10 @@
 </head>
 <body>
 
-<!-- Modal para ampliar foto (ajuda a ler etiqueta de marca/tamanho) -->
+<!-- Modal para ampliar foto ou vídeo (ajuda a ler etiqueta de marca/tamanho ou ver vídeo do mosaico) -->
 <div id="zoomModal" class="zoom-modal hidden" onclick="fecharZoom()">
   <img id="zoomModalImg" src="" alt="Foto ampliada">
+  <video id="zoomModalVideo" src="" autoplay loop muted playsinline class="hidden"></video>
 </div>
 
 <div class="container" id="loginBox">
@@ -542,16 +545,16 @@
   
   <!-- === ABA MOSAICO === -->
   <div id="tab-mosaico" class="tab-content">
-    <h2>Gerenciar Fotos da Capa</h2>
-    <p style="text-align:center; font-size:0.9rem;">Estas são as 7 fotos que compõem o mosaico na página inicial.</p>
+    <h2>Gerenciar Fotos e Vídeos da Capa (Mosaico)</h2>
+    <p style="text-align:center; font-size:0.9rem;">Estas são as 7 posições que compõem o mosaico na página inicial. Você pode enviar <strong>fotos</strong> ou <strong>vídeos curtos (.mp4 / .mov)</strong> que ficarão rodando em loop contínuo.</p>
     <div id="mosaicoMsg" class="msg"></div>
     <div class="table-responsive">
       <table id="tabelaMosaico">
         <thead>
           <tr>
             <th>Posição</th>
-            <th>Imagem Atual</th>
-            <th>Nova Imagem</th>
+            <th>Mídia Atual</th>
+            <th>Nova Foto ou Vídeo</th>
             <th>Ação</th>
           </tr>
         </thead>
@@ -612,15 +615,43 @@
     return base;
   }
 
+  // ===== FUNÇÃO AUXILIAR DE DETECÇÃO DE VÍDEO =====
+  function ehMidiaVideo(url) {
+    if (!url) return false;
+    const limpa = String(url).split('?')[0].split('#')[0].toLowerCase();
+    return /\.(mp4|webm|mov|m4v|ogg)$/i.test(limpa);
+  }
+
   // ===== ZOOM MODAL =====
   function abrirZoom(url) {
     if (!url) return;
-    document.getElementById('zoomModalImg').src = url;
+    const imgEl = document.getElementById('zoomModalImg');
+    const vidEl = document.getElementById('zoomModalVideo');
+    if (ehMidiaVideo(url)) {
+      imgEl.classList.add('hidden');
+      imgEl.src = '';
+      vidEl.src = url;
+      vidEl.classList.remove('hidden');
+      vidEl.play().catch(() => {});
+    } else {
+      if (vidEl) {
+        vidEl.pause();
+        vidEl.classList.add('hidden');
+        vidEl.src = '';
+      }
+      imgEl.src = url;
+      imgEl.classList.remove('hidden');
+    }
     document.getElementById('zoomModal').classList.remove('hidden');
   }
   function fecharZoom() {
     document.getElementById('zoomModal').classList.add('hidden');
     document.getElementById('zoomModalImg').src = '';
+    const vidEl = document.getElementById('zoomModalVideo');
+    if (vidEl) {
+      vidEl.pause();
+      vidEl.src = '';
+    }
   }
 
   // ===== CONVERSÃO HEIC + COMPRESSÃO DE IMAGEM =====
@@ -1575,18 +1606,34 @@
     const posicoes = [1,2,3,4,5,6,7];
     posicoes.forEach(pos => {
       const item = data.find(d => d.posicao === pos) || { posicao: pos, url_imagem: '' };
+      const isVid = ehMidiaVideo(item.url_imagem);
+      let midiaHtml = 'Vazio';
+      if (item.url_imagem) {
+        if (isVid) {
+          midiaHtml = `
+            <div class="mosaico-thumb-wrap">
+              <video src="${item.url_imagem}" class="thumb" autoplay loop muted playsinline onclick="abrirZoom('${item.url_imagem}')" title="Clique para ampliar vídeo"></video>
+              <span class="badge-video">🎬 Vídeo</span>
+            </div>
+          `;
+        } else {
+          midiaHtml = `
+            <div class="mosaico-thumb-wrap">
+              <img src="${item.url_imagem}" class="thumb" onclick="abrirZoom('${item.url_imagem}')" title="Clique para ampliar foto">
+            </div>
+          `;
+        }
+      }
       
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td>${item.posicao} ${item.posicao === 5 ? '(Centro Grande)' : ''}</td>
+        <td>${midiaHtml}</td>
         <td>
-          ${item.url_imagem ? `<img src="${item.url_imagem}" class="thumb" onclick="abrirZoom('${item.url_imagem}')">` : 'Vazio'}
+          <input type="file" id="file-mosaico-${item.posicao}" accept="image/*,video/mp4,video/webm,video/quicktime,.heic,.heif,.mp4,.mov,.webm">
         </td>
         <td>
-          <input type="file" id="file-mosaico-${item.posicao}" accept="image/*,.heic,.heif">
-        </td>
-        <td>
-          <button class="btn-edit" onclick="salvarFotoMosaico(${item.posicao})">Salvar</button>
+          <button id="btn-mosaico-${item.posicao}" class="btn-edit" onclick="salvarFotoMosaico(${item.posicao})">Salvar</button>
         </td>
       `;
       tbody.appendChild(tr);
@@ -1595,52 +1642,95 @@
 
   async function salvarFotoMosaico(pos) {
     const fileInput = document.getElementById('file-mosaico-' + pos);
+    const btn = document.getElementById('btn-mosaico-' + pos);
     const file = fileInput.files[0];
     const msgDiv = document.getElementById('mosaicoMsg');
     
     if(!file) {
       msgDiv.className = 'msg error';
-      msgDiv.innerText = 'Por favor, selecione uma imagem primeiro!';
+      msgDiv.innerText = 'Por favor, selecione uma foto ou vídeo primeiro!';
       setTimeout(() => msgDiv.style.display = 'none', 3000);
       return;
     }
 
-    msgDiv.className = 'msg';
-    msgDiv.style.display = 'block';
-    msgDiv.style.color = '#333';
-    msgDiv.innerText = 'Processando e fazendo upload da imagem...';
+    const fileNameLower = (file.name || '').toLowerCase();
+    const isVideo = (file.type && file.type.startsWith('video/')) || /\.(mp4|webm|mov|m4v)$/i.test(fileNameLower);
 
-    const { arquivo, nomeArquivo } = await processarImagemParaUpload(file, `mosaico_${pos}`);
-    
-    const { error: uploadError } = await supabaseClient
-      .storage
-      .from('fotos')
-      .upload(nomeArquivo, arquivo, { contentType: 'image/jpeg' });
-
-    if (uploadError) {
-      msgDiv.className = 'msg error';
-      msgDiv.innerText = 'Erro ao enviar foto: ' + uploadError.message;
-      return;
+    if (isVideo) {
+      const maxMB = 45;
+      if (file.size > maxMB * 1024 * 1024) {
+        msgDiv.className = 'msg error';
+        msgDiv.innerText = `O vídeo é muito grande (${(file.size / 1024 / 1024).toFixed(1)} MB). Escolha um vídeo de até ${maxMB} MB.`;
+        setTimeout(() => msgDiv.style.display = 'none', 5000);
+        return;
+      }
     }
 
-    const { data: publicUrlData } = supabaseClient.storage.from('fotos').getPublicUrl(nomeArquivo);
-    const imageUrl = publicUrlData.publicUrl;
-
-    const { error: dbError } = await supabaseClient
-      .from('mosaico')
-      .upsert({ posicao: pos, url_imagem: imageUrl }, { onConflict: 'posicao' });
-
-    if(dbError) {
-      msgDiv.className = 'msg error';
-      msgDiv.innerText = 'Erro ao salvar no banco: ' + dbError.message;
-      return;
+    if (btn) {
+      btn.disabled = true;
+      btn.innerText = 'Salvando...';
     }
 
-    msgDiv.className = 'msg success';
-    msgDiv.innerText = 'Foto da posição ' + pos + ' atualizada com sucesso!';
-    fileInput.value = '';
-    carregarMosaico();
-    setTimeout(() => msgDiv.style.display = 'none', 3000);
+    try {
+      msgDiv.className = 'msg';
+      msgDiv.style.display = 'block';
+      msgDiv.style.color = '#333';
+      msgDiv.innerText = isVideo
+        ? 'Enviando vídeo para o Mosaico (aguarde alguns segundos)...'
+        : 'Processando e fazendo upload da imagem...';
+
+      let arquivoUpload;
+      let nomeArquivo;
+      let contentType;
+
+      if (isVideo) {
+        let ext = (fileNameLower.split('.').pop() || 'mp4').replace(/[^a-z0-9]/g, '');
+        if (!['mp4', 'webm', 'mov', 'm4v'].includes(ext)) ext = 'mp4';
+        nomeArquivo = `mosaico_${pos}_${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${ext}`;
+        arquivoUpload = file;
+        contentType = file.type || (ext === 'mov' ? 'video/quicktime' : (ext === 'webm' ? 'video/webm' : 'video/mp4'));
+      } else {
+        const processado = await processarImagemParaUpload(file, `mosaico_${pos}`);
+        arquivoUpload = processado.arquivo;
+        nomeArquivo = processado.nomeArquivo;
+        contentType = 'image/jpeg';
+      }
+
+      const { error: uploadError } = await supabaseClient
+        .storage
+        .from('fotos')
+        .upload(nomeArquivo, arquivoUpload, { contentType });
+
+      if (uploadError) {
+        msgDiv.className = 'msg error';
+        msgDiv.innerText = 'Erro ao enviar arquivo: ' + uploadError.message;
+        return;
+      }
+
+      const { data: publicUrlData } = supabaseClient.storage.from('fotos').getPublicUrl(nomeArquivo);
+      const mediaUrl = publicUrlData.publicUrl;
+
+      const { error: dbError } = await supabaseClient
+        .from('mosaico')
+        .upsert({ posicao: pos, url_imagem: mediaUrl }, { onConflict: 'posicao' });
+
+      if(dbError) {
+        msgDiv.className = 'msg error';
+        msgDiv.innerText = 'Erro ao salvar no banco: ' + dbError.message;
+        return;
+      }
+
+      msgDiv.className = 'msg success';
+      msgDiv.innerText = `${isVideo ? '🎬 Vídeo' : '📸 Foto'} da posição ${pos} atualizado(a) com sucesso!`;
+      fileInput.value = '';
+      await carregarMosaico();
+      setTimeout(() => msgDiv.style.display = 'none', 4000);
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerText = 'Salvar';
+      }
+    }
   }
 </script>
 </body>

@@ -22,7 +22,7 @@
   html{scroll-behavior:smooth}
   body{font-family:'Montserrat',sans-serif;background:var(--bege);color:var(--preto);line-height:1.6}
   h1,h2,h3{font-family:'Cormorant Garamond',serif}
-  img{max-width:100%;display:block}
+  img,video{max-width:100%;display:block}
 
   /* ---- HEADER NOVO ---- */
   .top-bar { background: #1A2530; color: #fff; padding: 10px 24px; display: flex; justify-content: flex-end; align-items: center; gap: 24px; font-size: 0.7rem; letter-spacing: 1.5px; text-transform: uppercase; }
@@ -44,12 +44,12 @@
   /* ---- HERO MASONRY ---- */
   .hero-masonry { max-width: 1200px; margin: 0 auto 50px; padding: 0 24px; display: grid; grid-template-columns: 1fr 1fr 1.15fr 1fr; gap: 16px; height: 500px; overflow: hidden; }
   .masonry-col { display: flex; flex-direction: column; gap: 16px; height: 100%; min-height: 0; }
-  .masonry-img { width: 100%; height: calc(50% - 8px); object-fit: cover; min-height: 0; }
+  .masonry-img { width: 100%; height: calc(50% - 8px); object-fit: cover; min-height: 0; display: block; }
   .masonry-center { position: relative; height: 100%; min-height: 0; }
-  .masonry-center img { height: 100%; width: 100%; object-fit: cover; min-height: 0; }
-  .masonry-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.1); display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff; text-align: center; }
+  .masonry-center img, .masonry-center video { height: 100%; width: 100%; object-fit: cover; min-height: 0; display: block; }
+  .masonry-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.1); display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff; text-align: center; z-index: 2; pointer-events: none; }
   .masonry-overlay h2 { font-family: 'Cormorant Garamond', serif; font-size: 2.2rem; margin-bottom: 20px; font-weight: 500; text-shadow: 1px 1px 4px rgba(0,0,0,0.4); line-height: 1.1; letter-spacing: 1px; text-transform: uppercase;}
-  .btn-hero { background: rgba(255,255,255,0.95); color: #3F4636; padding: 10px 24px; border-radius: 30px; text-decoration: none; font-size: 0.7rem; text-transform: uppercase; font-weight: 600; letter-spacing: 2px; transition: background 0.3s; border: none; cursor: pointer; }
+  .btn-hero { background: rgba(255,255,255,0.95); color: #3F4636; padding: 10px 24px; border-radius: 30px; text-decoration: none; font-size: 0.7rem; text-transform: uppercase; font-weight: 600; letter-spacing: 2px; transition: background 0.3s; border: none; cursor: pointer; pointer-events: auto; }
   .btn-hero:hover { background: #fff; color: var(--dourado); }
   .hamburger{display:none;background:none;border:none;font-size:1.6rem;cursor:pointer;color:#fff;}
   .btn{display:inline-block;background:var(--verde);color:#fff;padding:14px 34px;text-decoration:none;letter-spacing:2px;text-transform:uppercase;font-size:.8rem;transition:background .3s;border:none;cursor:pointer}
@@ -320,14 +320,49 @@
   let filtroAtivo = 'todos';
   let carrinho = JSON.parse(localStorage.getItem('jc-carrinho')) || [];
 
-  // ===== CARREGAR MOSAICO =====
+  // ===== CARREGAR MOSAICO (FOTOS E VÍDEOS EM LOOP) =====
+  function ehMidiaVideo(url) {
+    if (!url) return false;
+    const limpa = String(url).split('?')[0].split('#')[0].toLowerCase();
+    return /\.(mp4|webm|mov|m4v|ogg)$/i.test(limpa);
+  }
+
   async function carregarMosaico() {
     const { data, error } = await supabaseClient.from('mosaico').select('*');
     if (!error && data) {
       data.forEach(item => {
-        if (item.url_imagem) {
-          const img = document.getElementById('mosaico-' + item.posicao);
-          if (img) img.src = item.url_imagem;
+        if (!item.url_imagem) return;
+        const elAtual = document.getElementById('mosaico-' + item.posicao);
+        if (!elAtual) return;
+
+        if (ehMidiaVideo(item.url_imagem)) {
+          const video = document.createElement('video');
+          video.id = 'mosaico-' + item.posicao;
+          if (elAtual.className) video.className = elAtual.className;
+          video.src = item.url_imagem;
+          video.autoplay = true;
+          video.loop = true;
+          video.muted = true;
+          video.defaultMuted = true;
+          video.playsInline = true;
+          video.setAttribute('autoplay', '');
+          video.setAttribute('loop', '');
+          video.setAttribute('muted', '');
+          video.setAttribute('playsinline', '');
+          video.setAttribute('preload', 'auto');
+          elAtual.replaceWith(video);
+          video.play().catch(() => {});
+        } else {
+          if (elAtual.tagName.toLowerCase() === 'img') {
+            elAtual.src = item.url_imagem;
+          } else {
+            const img = document.createElement('img');
+            img.id = 'mosaico-' + item.posicao;
+            if (elAtual.className) img.className = elAtual.className;
+            img.alt = item.posicao === 5 ? 'Imagem Destaque' : ('Imagem ' + item.posicao);
+            img.src = item.url_imagem;
+            elAtual.replaceWith(img);
+          }
         }
       });
     }
