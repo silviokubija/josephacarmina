@@ -239,6 +239,70 @@
     margin-bottom: 30px;
     background: #fff;
   }
+  .form-row-2col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+  }
+  .input-travado {
+    background-color: #EFECE6 !important;
+    color: #5c6154 !important;
+    font-weight: 600;
+    cursor: not-allowed;
+    border: 1px dashed #c5beaf !important;
+  }
+  .id-sistema-badge {
+    display: inline-block;
+    background: #EFECE6;
+    color: var(--verde-escuro);
+    border: 1px solid #d5cfc0;
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-size: 0.76rem;
+    font-weight: 700;
+  }
+  .badge-codigo {
+    display: inline-block;
+    background: #FAF3E3;
+    color: #7a6234;
+    border: 1px solid var(--dourado);
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-size: 0.82rem;
+    font-weight: 600;
+  }
+  .inline-cod-wrap {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .input-inline-codigo {
+    width: 105px;
+    padding: 6px 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--verde-escuro);
+    background: #FAF8F3;
+    border: 1px solid #d5cfc0;
+    border-radius: 4px;
+    transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+  }
+  .input-inline-codigo:focus {
+    outline: none;
+    background: #fff;
+    border-color: var(--dourado);
+    box-shadow: 0 0 0 2px rgba(184, 155, 94, 0.2);
+  }
+  .input-inline-codigo::placeholder {
+    color: #aaa;
+    font-weight: 400;
+  }
+  .inline-cod-status {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #2e7d32;
+    min-width: 14px;
+  }
   .foto-preview-wrap {
     margin-top: 8px;
     display: none;
@@ -285,6 +349,10 @@
     }
     .fila-grid-fields {
       grid-template-columns: 1fr;
+    }
+    .form-row-2col {
+      grid-template-columns: 1fr;
+      gap: 0;
     }
   }
 </style>
@@ -390,6 +458,16 @@
       <form id="addForm">
         <input type="hidden" id="editId">
         <input type="hidden" id="oldImage">
+        <div class="form-row-2col">
+          <div class="form-group">
+            <label>🔒 ID Registro (Sistema)</label>
+            <input type="text" id="displayId" value="Automático (gerado ao salvar)" disabled class="input-travado" readonly title="Número de registro gerado automaticamente pelo sistema (travado)">
+          </div>
+          <div class="form-group">
+            <label>🏷️ Código / Etiqueta</label>
+            <input type="text" id="codigo" placeholder="Ex: 105, 389, s/c">
+          </div>
+        </div>
         <div class="form-group">
           <label>Nome da Peça</label>
           <input type="text" id="nome" required>
@@ -446,10 +524,13 @@
       <table>
         <thead>
           <tr>
+            <th>ID</th>
+            <th>Código / Etiqueta</th>
             <th>Foto</th>
             <th>Nome</th>
             <th>Marca</th>
             <th>Categoria</th>
+            <th>Tam.</th>
             <th>Preço</th>
             <th>Ação</th>
           </tr>
@@ -497,6 +578,39 @@
   let marcasDisponiveis = [];
   let categoriasDisponiveis = ['Acessórios', 'Blusas', 'Bolsas', 'Calças', 'Vestidos'];
   let idsRascunhosRenderizados = [];
+  let todosProdutosCarregados = [];
+  let colunaCodigoExiste = false;
+
+  // ===== FUNÇÕES AUXILIARES DE CÓDIGO / ETIQUETA =====
+  function extrairCodigo(produto) {
+    if (!produto) return '';
+    if (produto.codigo !== undefined && produto.codigo !== null && String(produto.codigo).trim() !== '') {
+      return String(produto.codigo).trim();
+    }
+    if (produto.imagem && produto.imagem.includes('#cod=')) {
+      try {
+        return decodeURIComponent(produto.imagem.split('#cod=')[1] || '').trim();
+      } catch (e) {
+        return (produto.imagem.split('#cod=')[1] || '').trim();
+      }
+    }
+    return '';
+  }
+
+  function limparUrlImagem(url) {
+    if (!url) return '';
+    return String(url).split('#cod=')[0];
+  }
+
+  function anexarCodigoNaUrl(url, codigo) {
+    const base = limparUrlImagem(url);
+    if (!base) return '';
+    const codLimpo = (codigo || '').trim();
+    if (codLimpo) {
+      return `${base}#cod=${encodeURIComponent(codLimpo)}`;
+    }
+    return base;
+  }
 
   // ===== ZOOM MODAL =====
   function abrirZoom(url) {
@@ -912,6 +1026,7 @@
       const card = document.getElementById(`fila-card-${id}`);
       if (card) {
         estadoDigitado[id] = {
+          codigo: document.getElementById(`fila-codigo-${id}`)?.value || '',
           nome: document.getElementById(`fila-nome-${id}`)?.value || '',
           marca: document.getElementById(`fila-marca-${id}`)?.value || '',
           categoria: document.getElementById(`fila-cat-${id}`)?.value || 'Vestidos',
@@ -927,13 +1042,25 @@
     const opcoesMarcaHtml = marcasDisponiveis.map(m => `<option value="${m.replace(/"/g, '&quot;')}">${m}</option>`).join('');
     const opcoesCatHtml = categoriasDisponiveis.map(c => `<option value="${c.replace(/"/g, '&quot;')}">${c}</option>`).join('');
 
-    listaFila.innerHTML = rascunhos.map(r => `
+    listaFila.innerHTML = rascunhos.map(r => {
+      const codigoSalvo = extrairCodigo(r);
+      const imgLimpa = limparUrlImagem(r.imagem);
+      return `
       <div class="fila-card" id="fila-card-${r.id}">
         <div class="fila-card-left">
-          <img src="${r.imagem}" alt="Foto na fila" onclick="abrirZoom('${r.imagem}')" title="Clique para ampliar">
+          <span class="id-sistema-badge" title="ID único gerado pelo sistema">🔒 ID #${r.id}</span>
+          <img src="${imgLimpa}" alt="Foto na fila" onclick="abrirZoom('${imgLimpa}')" title="Clique para ampliar">
           <span class="zoom-hint">🔍 Clique na foto p/ ampliar</span>
         </div>
         <div class="fila-grid-fields">
+          <div>
+            <label>🔒 ID Registro (Sistema)</label>
+            <input type="text" value="#${r.id}" disabled class="input-travado" readonly title="Número de registro gerado automaticamente pelo sistema (travado)">
+          </div>
+          <div>
+            <label>🏷️ Código / Etiqueta</label>
+            <input type="text" id="fila-codigo-${r.id}" value="${codigoSalvo.replace(/"/g, '&quot;')}" placeholder="Ex: 105, 389, s/c" onchange="salvarCodigoRascunho(${r.id}, '${imgLimpa}')">
+          </div>
           <div class="full-col">
             <label>Nome da Peça *</label>
             <input type="text" id="fila-nome-${r.id}" placeholder="Ex: Vestido Midi Linho">
@@ -972,7 +1099,7 @@
             <button type="button" id="btn-pub-${r.id}" onclick="publicarItemFila(${r.id})">
               ✅ Publicar no Catálogo
             </button>
-            <button type="button" class="btn-mosaico-use" onclick="usarFotoFilaNoMosaico(${r.id}, '${r.imagem}')">
+            <button type="button" class="btn-mosaico-use" onclick="usarFotoFilaNoMosaico(${r.id}, '${imgLimpa}')">
               🖼️ Usar na Capa (Mosaico)
             </button>
             <button type="button" class="btn-danger" onclick="descartarItemFila(${r.id})" style="flex:0 0 auto; min-width:100px;">
@@ -981,12 +1108,16 @@
           </div>
         </div>
       </div>
-    `).join('');
+    `;
+    }).join('');
 
     // Restaura qualquer texto que já estava digitado antes de adicionar novas fotos
     Object.keys(estadoDigitado).forEach(id => {
       const est = estadoDigitado[id];
       if (document.getElementById(`fila-nome-${id}`)) {
+        if (est.codigo && document.getElementById(`fila-codigo-${id}`)) {
+          document.getElementById(`fila-codigo-${id}`).value = est.codigo;
+        }
         document.getElementById(`fila-nome-${id}`).value = est.nome;
         if (est.marca) document.getElementById(`fila-marca-${id}`).value = est.marca;
         if (est.categoria) document.getElementById(`fila-cat-${id}`).value = est.categoria;
@@ -997,7 +1128,15 @@
     });
   }
 
+  async function salvarCodigoRascunho(id, urlBase) {
+    const codigo = document.getElementById(`fila-codigo-${id}`)?.value.trim() || '';
+    const payload = { imagem: anexarCodigoNaUrl(urlBase, codigo) };
+    if (colunaCodigoExiste) payload.codigo = codigo;
+    await supabaseClient.from('produtos').update(payload).eq('id', id);
+  }
+
   async function publicarItemFila(id, silencioso = false) {
+    const codigo = document.getElementById(`fila-codigo-${id}`)?.value.trim() || '';
     const nome = document.getElementById(`fila-nome-${id}`)?.value.trim();
     const marca = document.getElementById(`fila-marca-${id}`)?.value;
     const categoria = document.getElementById(`fila-cat-${id}`)?.value;
@@ -1019,6 +1158,9 @@
       btn.textContent = 'Publicando...';
     }
 
+    const itemAtual = todosProdutosCarregados.find(p => Number(p.id) === Number(id));
+    const imgBase = limparUrlImagem(itemAtual ? itemAtual.imagem : (document.querySelector(`#fila-card-${id} img`)?.src || ''));
+
     const dadosAtualizados = {
       nome,
       marca,
@@ -1027,6 +1169,12 @@
       preco,
       selo
     };
+    if (imgBase) {
+      dadosAtualizados.imagem = anexarCodigoNaUrl(imgBase, codigo);
+    }
+    if (colunaCodigoExiste) {
+      dadosAtualizados.codigo = codigo;
+    }
 
     const { error } = await supabaseClient.from('produtos').update(dadosAtualizados).eq('id', id);
     if (error) {
@@ -1154,7 +1302,8 @@
       const file = document.getElementById('foto').files[0];
       const editId = document.getElementById('editId').value;
       const oldImage = document.getElementById('oldImage').value;
-      let finalImageUrl = oldImage;
+      const codigo = document.getElementById('codigo').value.trim();
+      let finalImageUrl = limparUrlImagem(oldImage);
 
       if (file) {
         const { arquivo, nomeArquivo } = await processarImagemParaUpload(file, 'peca');
@@ -1175,8 +1324,12 @@
         tamanho: document.getElementById('tamanho').value,
         preco: parseFloat(document.getElementById('preco').value),
         selo: document.getElementById('selo').value,
-        imagem: finalImageUrl
+        imagem: anexarCodigoNaUrl(finalImageUrl, codigo)
       };
+
+      if (colunaCodigoExiste) {
+        produto.codigo = codigo;
+      }
 
       if (editId) {
         const { error: updateError } = await supabaseClient.from('produtos').update(produto).eq('id', editId);
@@ -1205,8 +1358,13 @@
     const { data, error } = await supabaseClient.from('produtos').select('*').order('created_at', { ascending: false });
     const tbody = document.getElementById('tabelaProdutos');
     if (error || !data) {
-      tbody.innerHTML = '<tr><td colspan="6">Erro ao carregar</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="9">Erro ao carregar</td></tr>';
       return;
+    }
+
+    todosProdutosCarregados = data;
+    if (data.length > 0 && ('codigo' in data[0])) {
+      colunaCodigoExiste = true;
     }
 
     const rascunhos = data.filter(p => p.categoria === MARCADOR_FILA || p.nome === MARCADOR_FILA);
@@ -1218,26 +1376,108 @@
     // Renderiza a fila de fotos enviadas pelo celular
     renderFilaRascunhos(rascunhos, forcarRenderFila);
     
-    tbody.innerHTML = publicados.map(p => `
+    tbody.innerHTML = publicados.map(p => {
+      const cod = extrairCodigo(p);
+      const imgLimpa = limparUrlImagem(p.imagem);
+      return `
       <tr>
-        <td><img src="${p.imagem}" class="thumb" onclick="abrirZoom('${p.imagem}')" title="Clique para ampliar"></td>
+        <td style="font-weight:700; color:#5E6751; white-space:nowrap;">#${p.id}</td>
+        <td>
+          <div class="inline-cod-wrap">
+            <input
+              type="text"
+              id="tab-codigo-${p.id}"
+              class="input-inline-codigo"
+              value="${cod.replace(/"/g, '&quot;')}"
+              placeholder="Inserir cód..."
+              title="Clique para digitar ou alterar o Código / Etiqueta"
+              onchange="salvarCodigoTabela(${p.id}, '${imgLimpa}')"
+              onkeydown="if(event.key==='Enter'){ event.preventDefault(); this.blur(); }"
+            >
+            <span id="tab-cod-status-${p.id}" class="inline-cod-status"></span>
+          </div>
+        </td>
+        <td><img src="${imgLimpa}" class="thumb" onclick="abrirZoom('${imgLimpa}')" title="Clique para ampliar"></td>
         <td>${p.nome}</td>
         <td>${p.marca || '-'}</td>
         <td>${p.categoria}</td>
-        <td>R$ ${Number(p.preco).toFixed(2).replace('.',',')}</td>
+        <td>${p.tamanho || '-'}</td>
+        <td style="white-space:nowrap;">R$ ${Number(p.preco).toFixed(2).replace('.',',')}</td>
         <td class="action-buttons">
-          <button class="btn-edit" onclick="iniciarEdicao('${p.id}', '${p.nome.replace(/'/g, "\\'")}', '${p.marca ? p.marca.replace(/'/g, "\\'") : ''}', '${p.categoria}', '${p.tamanho}', ${p.preco}, '${(p.selo || '').replace(/'/g, "\\'")}', '${p.imagem}')">Alterar</button>
+          <button class="btn-edit" onclick="editarPeloId(${p.id})">Alterar</button>
           <button class="btn-danger" onclick="excluir(${p.id})">Excluir</button>
         </td>
       </tr>
-    `).join('');
+    `;
+    }).join('');
+  }
+
+  async function salvarCodigoTabela(id, urlBase) {
+    const inputEl = document.getElementById(`tab-codigo-${id}`);
+    const statusEl = document.getElementById(`tab-cod-status-${id}`);
+    if (!inputEl) return;
+    const codigo = inputEl.value.trim();
+    const novaUrl = anexarCodigoNaUrl(urlBase, codigo);
+    const payload = { imagem: novaUrl };
+    if (colunaCodigoExiste) payload.codigo = codigo;
+
+    if (statusEl) {
+      statusEl.style.color = '#888';
+      statusEl.textContent = '...';
+    }
+
+    const { error } = await supabaseClient.from('produtos').update(payload).eq('id', id);
+    if (error) {
+      showMsg('Erro ao salvar código: ' + error.message, true);
+      if (statusEl) {
+        statusEl.style.color = '#b34a3c';
+        statusEl.textContent = '✕';
+      }
+      return;
+    }
+
+    const itemMemoria = todosProdutosCarregados.find(item => Number(item.id) === Number(id));
+    if (itemMemoria) {
+      itemMemoria.imagem = novaUrl;
+      if (colunaCodigoExiste) itemMemoria.codigo = codigo;
+    }
+
+    if (document.getElementById('editId').value === String(id)) {
+      document.getElementById('codigo').value = codigo;
+    }
+
+    if (statusEl) {
+      statusEl.style.color = '#2e7d32';
+      statusEl.textContent = '✓';
+      setTimeout(() => {
+        if (statusEl.textContent === '✓') statusEl.textContent = '';
+      }, 2500);
+    }
   }
 
   // ===== INICIAR EDIÇÃO =====
-  function iniciarEdicao(id, nome, marca, categoria, tamanho, preco, selo, imagem) {
+  function editarPeloId(id) {
+    const p = todosProdutosCarregados.find(item => Number(item.id) === Number(id));
+    if (!p) return;
+    iniciarEdicao(
+      p.id,
+      p.nome || '',
+      p.marca || '',
+      p.categoria || '',
+      p.tamanho || '',
+      p.preco || 0,
+      p.selo || '',
+      limparUrlImagem(p.imagem),
+      extrairCodigo(p)
+    );
+  }
+
+  function iniciarEdicao(id, nome, marca, categoria, tamanho, preco, selo, imagem, codigo = '') {
     document.getElementById('formTitle').textContent = 'Alterar Peça';
     document.getElementById('editId').value = id;
     document.getElementById('oldImage').value = imagem;
+    document.getElementById('displayId').value = '#' + id;
+    document.getElementById('codigo').value = codigo || '';
     
     document.getElementById('nome').value = nome;
     document.getElementById('tamanho').value = tamanho;
@@ -1289,6 +1529,8 @@
     document.getElementById('formTitle').textContent = 'Adicionar Peça Individual';
     document.getElementById('editId').value = '';
     document.getElementById('oldImage').value = '';
+    document.getElementById('displayId').value = 'Automático (gerado ao salvar)';
+    document.getElementById('codigo').value = '';
     
     document.getElementById('foto').required = true;
     document.getElementById('fotoLabel').textContent = 'Foto da Peça (Aceita JPG, PNG ou HEIC do iPhone)';
